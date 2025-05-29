@@ -1,51 +1,68 @@
 import { useState } from "react";
-import CreateQuestionSet from "../components/CreateQuestionSet";
-import HostSession from "../components/HostSession";
-import JoinQuiz from "../components/JoinQuiz";
-import PlayQuiz from "../components/PlayQuiz";
-import QuestionSetLibrary from "../components/QuestionSetLibrary";
+import CreateQuestionSet from "@/components/Screens/CreateQuestionSet";
+import HostSessionSetup from "@/components/Screens/HostSessionSetup";
+import HostSessionActive from "@/components/Screens/HostSessionActive";
+import JoinQuiz from "@/components/Screens/JoinQuiz";
+import PlayQuiz from "@/components/Screens/PlayQuiz";
+import QuestionSetLibrary from "@/components/QuestionSetLibrary";
+
+
+  const MODES = {
+      HOME: "home",
+      CREATE: "create",
+      LIBRARY: "library",
+      JOIN: "join",
+      HOSTSETUP: "hostSetUp",
+      HOSTACTIVE: "hostActive",
+  };
 
 export default function App() {
-  const [mode, setMode] = useState(null);
+  const [mode, setMode] = useState("home");
+  const goHome = () => { setMode(MODES.HOME); setSessionId(""); setQuestionSetData(null); } // my return to the main menu button. Currently resets EVERYTHING like a refresh. Still  issue of holding onto these when quiz finishes
   const [questionSetData, setQuestionSetData] = useState(null);
   const [sessionId, setSessionId] = useState("");
 
+
+
   return (
     <div style={{ padding: 20 }}>
-      {!mode && (
+      {!mode || mode === MODES.HOME && (
         <>
           <h1>Welcome to Quiz App</h1>
-          <button onClick={() => setMode("create")}>Create New Question Set</button>
-          <button onClick={() => setMode("library")}>Host Saved Question Set</button>
-          <button onClick={() => setMode("join")}>Join Quiz</button>
+          <button onClick={() => setMode(MODES.CREATE)}>Create New Question Set</button>
+          <button onClick={() => setMode(MODES.LIBRARY)}>Host Saved Question Set</button>
+          <button onClick={() => setMode(MODES.JOIN)}>Join Quiz</button>
         </>
       )}
 
-      {mode === "create" && !questionSetData && (
-        <CreateQuestionSet onComplete={(data) => setQuestionSetData(data)} />
+      {mode === MODES.CREATE && (
+        <CreateQuestionSet goHome={goHome}/>
       )}
 
-      {mode === "library" && !questionSetData && (
-        <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} />
-      )}
 
-      {(mode === "create" || mode === "library") && questionSetData && !sessionId && (
-        <HostSession questionSetData={questionSetData} onSessionStarted={setSessionId} />
-      )}
-
-      {(mode === "create" || mode === "library") && sessionId && (
+      
+      {mode === MODES.LIBRARY && (
         <>
-          <h2>Session Started</h2>
-          <p>Session ID: <b>{sessionId}</b></p>
-        </>
+        {!questionSetData && ( 
+          <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} goHome={goHome}
+          />
+        )}
+        {questionSetData && !sessionId && (
+          <HostSessionSetup questionSetData={questionSetData} onSessionStarted={setSessionId} goHome={goHome}/>
+        )} 
+        {sessionId && (
+          <HostSessionActive sessionId={sessionId} goHome={goHome}/>
+         )}
+      </>
       )}
 
-      {mode === "join" && !sessionId && (
-        <JoinQuiz onJoined={(id) => setSessionId(id)} />
+
+      {mode === MODES.JOIN && !sessionId && (
+        <JoinQuiz onJoined={(id) => setSessionId(id)} goHome={goHome}/>
       )}
 
-      {mode === "join" && sessionId && (
-        <PlayQuiz sessionId={sessionId} />
+      {mode === MODES.JOIN && sessionId && (
+        <PlayQuiz sessionId={sessionId} goHome={goHome}/>
       )}
     </div>
   );

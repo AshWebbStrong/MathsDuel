@@ -1,4 +1,3 @@
-// components/QuizTimer.jsx
 export default function QuizTimer({ timeLeft }) {
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;

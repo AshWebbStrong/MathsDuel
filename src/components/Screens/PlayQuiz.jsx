@@ -1,10 +1,10 @@
-// components/PlayQuiz.jsx
-import { useQuizSession } from "../hooks/useQuizSession";
-import QuizTimer from "./QuizTimer";
-import QuestionCard from "./QuestionCard";
-import QuizSummary from "./QuizSummary";
+import { useQuizSession } from "@/hooks/useQuizSession";
+import QuizTimer from "@/components/QuizTimer";
+import QuestionCard from "@/components/QuestionCard";
+import QuizSummary from "@/components/QuizSummary";
+import BackToHomeButton from "@/components/BackToHomeButton";
 
-export default function PlayQuiz({ sessionId }) {
+export default function PlayQuiz({ sessionId, goHome }) {
   const {
     currentQuestion,
     playerAnswer,
@@ -34,6 +34,7 @@ export default function PlayQuiz({ sessionId }) {
           </p>
         </>
       )}
+      <BackToHomeButton goHome={goHome} />
     </div>
   );
 }

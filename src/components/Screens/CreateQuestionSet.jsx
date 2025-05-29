@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { db } from "../firebase";
+import { db } from "@/firebase/firebase.js";
 import { collection, addDoc } from "firebase/firestore";
+import BackToHomeButton from "@/components/BackToHomeButton.jsx";
 
-export default function CreateQuestionSet({ onComplete }) {
+export default function CreateQuestionSet({goHome}) {
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
   const [correctAnswer, setCorrectAnswer] = useState("");
@@ -28,7 +29,7 @@ export default function CreateQuestionSet({ onComplete }) {
     };
 
     const docRef = await addDoc(collection(db, "questionSets"), newQuestionSet);
-    onComplete({ ...newQuestionSet, id: docRef.id });
+    
   }
 
   return (
@@ -40,6 +41,7 @@ export default function CreateQuestionSet({ onComplete }) {
       <button onClick={addQuestion}>Add Question</button>
       <p>{questions.length} questions added</p>
       <button onClick={finish}>Save Question Set</button>
+       <BackToHomeButton goHome={goHome} />
     </div>
   );
 }
