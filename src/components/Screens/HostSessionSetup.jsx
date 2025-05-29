@@ -1,10 +1,24 @@
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect } from "react";
 import { db } from "@/firebase/firebase.js";
-import { serverTimestamp } from "firebase/firestore";
 import { generateUniqueSessionCode } from "../GenerateUniqueSessionCode.jsx";
 import BackToHomeButton from "@/components/BackToHomeButton.jsx";
+import QuestionSetLibrary from "@/components/QuestionSetLibrary";
 
-export default function HostSession({ questionSetData, onSessionStarted, goHome}) {
+export default function HostSession({ onSessionStarted, goHome}) {
+
+  const [questionSetData, setQuestionSetData] = useState(null);
+
+  useEffect(() => {
+    
+    console.log("opening library");
+    }, []);
+ 
+
+
+
+
+
   async function startSession() {
     try {
       const durationSeconds = 180
@@ -30,8 +44,9 @@ export default function HostSession({ questionSetData, onSessionStarted, goHome}
 
   return (
     <div>
-      <h2>Ready to host question set: {questionSetData.title}</h2>
+      <h2>Ready to host question set: </h2>
       <button onClick={startSession}>Start Session</button>
+      <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} />
       <BackToHomeButton goHome={goHome} />
     </div>
   );

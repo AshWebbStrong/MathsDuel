@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { db } from "@/firebase/firebase.js";
 import { collection, getDocs } from "firebase/firestore";
-import BackToHomeButton from "@/components/BackToHomeButton";
 
-export default function QuestionSetLibrary({ onSelect, goHome }) {
+
+export default function QuestionSetLibrary({ onSelect}) {
   const [questionSets, setQuestionSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,12 +47,9 @@ useEffect(() => {
         <ul>
           {questionSets.map((qs) => (
             <li key={qs.id} style={{ marginBottom: 10 }}>
-              <strong>{qs.title}</strong> {qs.questions.length} questions
-              <br />
-              <button onClick={() => onSelect(qs)}>Host This</button>
+              <button onClick={() => onSelect(qs)}><strong>{qs.title}</strong></button>  {qs.questions.length} questions
             </li>
           ))}
-          <BackToHomeButton goHome={goHome} />
         </ul>
       )}
     </div>

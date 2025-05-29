@@ -5,15 +5,20 @@ import HostSessionActive from "@/components/Screens/HostSessionActive";
 import JoinQuiz from "@/components/Screens/JoinQuiz";
 import PlayQuiz from "@/components/Screens/PlayQuiz";
 import QuestionSetLibrary from "@/components/QuestionSetLibrary";
+import Home from "@/components/Screens/Home";
 
 
   const MODES = {
       HOME: "home",
+      LOGIN: "login",
+      PLAY: "play",
+      HOSTSETUP: "hostSetUp",
+      HOSTACTIVE: "hostActive",
+
       CREATE: "create",
       LIBRARY: "library",
       JOIN: "join",
-      HOSTSETUP: "hostSetUp",
-      HOSTACTIVE: "hostActive",
+     
   };
 
 export default function App() {
@@ -26,43 +31,44 @@ export default function App() {
 
   return (
     <div style={{ padding: 20 }}>
-      {!mode || mode === MODES.HOME && (
-        <>
-          <h1>Welcome to Quiz App</h1>
-          <button onClick={() => setMode(MODES.CREATE)}>Create New Question Set</button>
-          <button onClick={() => setMode(MODES.LIBRARY)}>Host Saved Question Set</button>
-          <button onClick={() => setMode(MODES.JOIN)}>Join Quiz</button>
-        </>
+
+      {mode === MODES.HOME && (
+        <Home 
+          onLogin={() => 
+            setMode(MODES.LOGIN)
+          }
+          onHost ={() =>
+            setMode(MODES.HOSTSETUP)
+          }
+          onCreate = {() => 
+              setMode(MODES.CREATE)
+          } 
+          onJoined={(id) => {
+            setSessionId(id);
+            setMode(MODES.PLAY);
+          }}/>
       )}
+
+      {mode === MODES.PLAY && (
+        <PlayQuiz sessionId={sessionId}/>
+      )}
+
 
       {mode === MODES.CREATE && (
         <CreateQuestionSet goHome={goHome}/>
       )}
 
-
-      
-      {mode === MODES.LIBRARY && (
-        <>
-        {!questionSetData && ( 
-          <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} goHome={goHome}
-          />
-        )}
-        {questionSetData && !sessionId && (
-          <HostSessionSetup questionSetData={questionSetData} onSessionStarted={setSessionId} goHome={goHome}/>
-        )} 
-        {sessionId && (
-          <HostSessionActive sessionId={sessionId} goHome={goHome}/>
-         )}
-      </>
+      {mode === MODES.HOSTSETUP && (
+        <HostSessionSetup 
+          onSessionStarted={(id) => {
+            setSessionId(id);
+            setMode(MODES.HOSTACTIVE);
+           }} 
+          goHome={goHome}/>
       )}
 
-
-      {mode === MODES.JOIN && !sessionId && (
-        <JoinQuiz onJoined={(id) => setSessionId(id)} goHome={goHome}/>
-      )}
-
-      {mode === MODES.JOIN && sessionId && (
-        <PlayQuiz sessionId={sessionId} goHome={goHome}/>
+      {mode === MODES.HOSTACTIVE && (
+        <HostSessionActive sessionId={sessionId} goHome={goHome}/>
       )}
     </div>
   );
