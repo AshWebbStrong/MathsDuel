@@ -4,11 +4,22 @@ import { getDatabase, ref, onValue } from "firebase/database";
 import { db } from "@/firebase/firebase.js";
 
 export function useQuizSession(sessionId) {
-  const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [playerAnswer, setPlayerAnswer] = useState("");
-  const [answeredCount, setAnsweredCount] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+
+  const [shieldQuestions, setShieldQuestions] = useState([]);
+  const [spellQuestions, setSpellQuestions] = useState([])
+
+  const [shieldIndex, setShieldIndex] = useState(0);
+  const [spellIndex, setSpellIndex] = useState(0);
+
+  const [shieldUserAnswer, setShieldUserAnswer] = useState("");
+  const [spellUserAnswer, setSpellUserAnswer] = useState("");
+
+  const [shieldCorrectCount, setShieldCorrectCount] = useState(0);
+  const [spellCorrectCount, setSpellCorrectCount] = useState(0);
+
+  const [shieldAnsweredCount, setShieldAnsweredCount] = useState(0);
+  const [spellAnsweredCount, setSpellAnsweredCount] = useState(0);
+
   const [timeLeft, setTimeLeft] = useState(180);
   const [quizEnded, setQuizEnded] = useState(false);
   const [playerId, setPlayerId] = useState(null);
@@ -63,27 +74,34 @@ export function useQuizSession(sessionId) {
 
   // Load questions once when session questionSetId is available
   useEffect(() => {
-    async function loadQuestions() {
-      if (!session?.questionSetId) return;
+    async function loadBothQuestionSets() {
+      if (!session?.questionSetIdShield || !session?.questionSetIdSpell) return;
+
       try {
-        const qsRef = doc(db, "questionSets", session.questionSetId);
-        const qsSnap = await getDoc(qsRef);
-        if (!qsSnap.exists()) {
-          console.warn("Question set not found in Firestore.");
-          return;
+        const shieldSnap = await getDoc(doc(db, "questionSets", session.questionSetIdShield));
+        const spellSnap = await getDoc(doc(db, "questionSets", session.questionSetIdSpell));
+
+        if (shieldSnap.exists()) {
+          const shuffled = shieldSnap.data().questions.sort(() => Math.random() - 0.5);
+          setShieldQuestions(shuffled);
         }
-        const shuffled = qsSnap.data().questions.sort(() => Math.random() - 0.5);
-        setQuestions(shuffled);
+
+        if (spellSnap.exists()) {
+          const shuffled = spellSnap.data().questions.sort(() => Math.random() - 0.5);
+          setSpellQuestions(shuffled);
+        }
       } catch (err) {
-        console.error("Error loading question set:", err);
+        console.error("Error loading question sets:", err);
       }
     }
-    loadQuestions();
-  }, [session?.questionSetId]);
+
+    loadBothQuestionSets();
+  }, [session?.questionSetIdShield, session?.questionSetIdSpell]);
+
 
   // Timer management - depends on session and offset
  useEffect(() => {
-  if (!session?.startTime || !session?.duration || offset === null) return;
+  if (!session?.startTime || !session?.duration || offset == null) return;
 
   const startTimestamp = session.startTime.toMillis();
   const endTimestamp = startTimestamp + session.duration * 1000
@@ -108,25 +126,42 @@ export function useQuizSession(sessionId) {
   };
 }, [session?.startTime, session?.duration, offset]);
 
-  // Dealing with questions
-  const currentQuestion = questions[currentQuestionIndex];
+  // Dealing with questions : checking if correct, moving onto next question, resetting answer input.
+  const submitShieldAnswer = async () => {
+    const question = shieldQuestions[shieldIndex];
+    if (!shieldUserAnswer || !playerId || !question) return;
 
-  const submitAnswer = async () => {
-    if (!playerAnswer || !playerId || !currentQuestion) return;
+    const isCorrect = shieldUserAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
 
-    const isCorrect =
-      playerAnswer.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+    setShieldAnsweredCount((prev) => prev + 1);
+    if (isCorrect) setShieldCorrectCount((prev) => prev + 1);
 
-    setAnsweredCount((prev) => prev + 1);
-    if (isCorrect) setCorrectCount((prev) => prev + 1);
+    await setDoc(doc(db, "sessions", sessionId, "players", playerId), { //What does this whole bit do?
+      lastShieldAnswer: shieldUserAnswer,
+    }, { merge: true });
 
-    const playerRef = doc(db, "sessions", sessionId, "players", playerId);
-    await setDoc(playerRef, { lastAnswer: playerAnswer }, { merge: true });
-
-    // Move to next random question
-    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
-    setPlayerAnswer("");
+    setShieldIndex((prev) => (prev + 1) % shieldQuestions.length);
+    setShieldUserAnswer("");
   };
+
+  const submitSpellAnswer = async () => {
+    const question = spellQuestions[spellIndex];
+    if (!spellUserAnswer || !playerId || !question) return;
+
+    const isCorrect = spellUserAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
+
+    setSpellAnsweredCount((prev) => prev + 1);
+    if (isCorrect) setSpellCorrectCount((prev) => prev + 1);
+
+    await setDoc(doc(db, "sessions", sessionId, "players", playerId), {
+      lastSpellAnswer: spellUserAnswer,
+    }, { merge: true });
+
+    setSpellIndex((prev) => (prev + 1) % spellQuestions.length);
+    setSpellUserAnswer("");
+  };
+
+  
     // Listen to see if host is still in the game
     useEffect(() => {
     const sessionRef = doc(db, "sessions", sessionId);
@@ -141,14 +176,26 @@ export function useQuizSession(sessionId) {
     return () => unsubscribe();
   }, [sessionId]);
 
+
   return {
-    currentQuestion,
-    playerAnswer,
-    setPlayerAnswer,
-    submitAnswer,
-    answeredCount,
-    correctCount,
-    timeLeft,
-    quizEnded,
-  };
+  trackShield: {
+    currentQuestion: shieldQuestions[shieldIndex],
+    playerAnswer: shieldUserAnswer,
+    setPlayerAnswer: setShieldUserAnswer,
+    submitAnswer: submitShieldAnswer,
+    answeredCount: shieldAnsweredCount,
+    correctCount: shieldCorrectCount,
+  },
+  trackSpell: {
+    currentQuestion: spellQuestions[spellIndex],
+    playerAnswer: spellUserAnswer,
+    setPlayerAnswer: setSpellUserAnswer,
+    submitAnswer: submitSpellAnswer,
+    answeredCount: spellAnsweredCount,
+    correctCount: spellCorrectCount,
+  },
+  timeLeft,
+  quizEnded,
+};
+
 }

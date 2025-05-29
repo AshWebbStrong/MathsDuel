@@ -7,19 +7,22 @@ import QuestionSetLibrary from "@/components/ui/QuestionSetLibrary";
 
 export default function HostSession({ onSessionStarted, goHome}) {
 
-  const [questionSetData, setQuestionSetData] = useState(null);
+  const [questionSetDataA, setQuestionSetDataA] = useState(null);
+  const [questionSetDataB, setQuestionSetDataB] = useState(null);
 
 
 
   async function startSession() {
     try {
       const durationSeconds = 180
+      //Generate a session with a unique code
       const sessionCode = await generateUniqueSessionCode();
       const sessionRef = doc(db, "sessions", sessionCode);
 
-      
+      //Add to the session the questionSets & other stuff chosen later
       await setDoc(sessionRef, {
-        questionSetId: questionSetData.id,
+        questionSetIdShield: questionSetDataA.id,
+        questionSetIdSpell: questionSetDataB.id,
         currentQuestionIndex: 0,
         startTime: serverTimestamp(), // use server timestamp
         duration: durationSeconds,
@@ -28,12 +31,16 @@ export default function HostSession({ onSessionStarted, goHome}) {
     
 
     onSessionStarted(sessionRef.id);
+
+    //Check for erorr
     } catch (err) {
       console.error("Error creating session:", err);
       alert("Failed to start session.");
     }
   }
 
+
+  
   return (
     <div style={{ display: "flex", width: "100%", minHeight: "100vh" }}>
       {/* Left section */}
@@ -45,7 +52,10 @@ export default function HostSession({ onSessionStarted, goHome}) {
 
       {/* Right section */}
       <div style={{ width: "40%", padding: "2rem", borderLeft: "1px solid #ccc" }}>
-        <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} />
+        <QuestionSetLibrary
+          onSelectA={(qs) => setQuestionSetDataA(qs)}
+          onSelectB={(qs) => setQuestionSetDataB(qs)}
+        />
       </div>
     </div>
   );
