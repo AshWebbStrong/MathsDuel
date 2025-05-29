@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { db } from "@/firebase/firebase.js";
 import { collection, addDoc } from "firebase/firestore";
-import BackToHomeButton from "@/components/BackToHomeButton.jsx";
+import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
 
 export default function CreateQuestionSet({goHome}) {
   const [title, setTitle] = useState("");

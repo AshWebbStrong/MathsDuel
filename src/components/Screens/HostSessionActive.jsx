@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebase.js";
-import BackToHomeButton from "@/components/BackToHomeButton.jsx";
+import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
 
 export default function HostSessionActive({ sessionId, goHome }) {
   useEffect(() => {

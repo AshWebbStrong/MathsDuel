@@ -1,21 +1,13 @@
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/firebase.js";
-import { generateUniqueSessionCode } from "../GenerateUniqueSessionCode.jsx";
-import BackToHomeButton from "@/components/BackToHomeButton.jsx";
-import QuestionSetLibrary from "@/components/QuestionSetLibrary";
+import { generateUniqueSessionCode } from "@/utils/GenerateUniqueSessionCode.js";
+import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
+import QuestionSetLibrary from "@/components/ui/QuestionSetLibrary";
 
 export default function HostSession({ onSessionStarted, goHome}) {
 
   const [questionSetData, setQuestionSetData] = useState(null);
-
-  useEffect(() => {
-    
-    console.log("opening library");
-    }, []);
- 
-
-
 
 
 
@@ -43,11 +35,20 @@ export default function HostSession({ onSessionStarted, goHome}) {
   }
 
   return (
-    <div>
-      <h2>Ready to host question set: </h2>
-      <button onClick={startSession}>Start Session</button>
-      <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} />
-      <BackToHomeButton goHome={goHome} />
+    <div style={{ display: "flex", width: "100%", minHeight: "100vh" }}>
+      {/* Left section */}
+      <div style={{ flex: 1, padding: "2rem" }}>
+        <h2>Ready to host question set:</h2>
+        <button onClick={startSession}>Start Session</button>
+        <BackToHomeButton goHome={goHome} />
+      </div>
+
+      {/* Right section */}
+      <div style={{ width: "40%", padding: "2rem", borderLeft: "1px solid #ccc" }}>
+        <QuestionSetLibrary onSelect={(qs) => setQuestionSetData(qs)} />
+      </div>
     </div>
   );
+
+
 }
