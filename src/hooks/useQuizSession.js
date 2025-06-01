@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { db } from "@/firebase/firebase.js";
 
-export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}) {
+export function useQuizSession(sessionId, {} = {}) {
 
   const [shieldQuestions, setShieldQuestions] = useState([]);
   const [spellQuestions, setSpellQuestions] = useState([])
@@ -22,6 +22,7 @@ export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}
 
   const [timeLeft, setTimeLeft] = useState(180);
   const [quizEnded, setQuizEnded] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(true);
   const [playerId, setPlayerId] = useState(null);
 
   const [offset, setOffset] = useState(0); // store offset here
@@ -67,10 +68,31 @@ export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}
     const unsub = onSnapshot(sessionRef, (snap) => {
       const data = snap.data();
       setSession(data);
+
     });
 
     return () => unsub();
   }, [sessionId]);
+
+    
+    // Listen to see if host is still in the game
+    useEffect(() => {
+      if (session?.hostActive === false) {
+        alert("Host has left. The session will now end.");
+        setQuizEnded(true);
+        // handle kicking players out or redirecting
+      }
+  }, [session?.hostActive]);
+
+    // Listens to see if host has started the game
+    useEffect(() => {
+      if (session?.gameStarted === true) {
+        setQuizStarted(true);
+        console.log("quiz has started");
+      }
+  }, [session?.gameStarted]);
+
+
 
   // Load questions once when session questionSetId is available
   useEffect(() => {
@@ -135,7 +157,6 @@ export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}
 
     setShieldAnsweredCount((prev) => prev + 1);
     if (isCorrect) {
-      onShieldCorrect();
       setShieldCorrectCount((prev) => prev + 1);
     }
 
@@ -156,7 +177,6 @@ export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}
     setSpellAnsweredCount((prev) => prev + 1);
     if (isCorrect) {
       setSpellCorrectCount((prev) => prev + 1);
-      onSpellCorrect();
     }
 
     await setDoc(doc(db, "sessions", sessionId, "players", playerId), { // Logs the last  answer for some reason
@@ -166,21 +186,6 @@ export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}
     setSpellIndex((prev) => (prev + 1) % spellQuestions.length);
     setSpellUserAnswer("");
   };
-
-  
-    // Listen to see if host is still in the game
-    useEffect(() => {
-    const sessionRef = doc(db, "sessions", sessionId);
-    const unsubscribe = onSnapshot(sessionRef, (docSnap) => {
-      if (!docSnap.exists()) return;
-      const data = docSnap.data();
-      if (data.hostActive === false) {
-        alert("Host has left. The session will now end.");
-        // handle kicking players out or redirecting
-      }
-    });
-    return () => unsubscribe();
-  }, [sessionId]);
 
 
   return {
@@ -202,6 +207,7 @@ export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}
   },
   timeLeft,
   quizEnded,
+  quizStarted,
 };
 
 }

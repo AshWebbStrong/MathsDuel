@@ -3,11 +3,11 @@ import { onAuthStateChanged, signOut,  signInWithPopup, GoogleAuthProvider } fro
 import { auth, db } from "@/firebase/firebase"; 
 import { doc, getDoc } from "firebase/firestore";
 
-import CreateQuestionSet from "@/components/Screens/CreateQuestionSet";
-import HostSessionSetup from "@/components/Screens/HostSessionSetup";
-import HostSessionActive from "@/components/Screens/HostSessionActive";
-import PlayQuiz from "@/components/Screens/PlayQuiz";
-import Home from "@/components/Screens/Home";
+import CreateQuestionSet from "@/components/screens/CreateQuestionSet";
+import HostSessionSetup from "@/components/screens/HostSessionSetup";
+import HostSessionActive from "@/components/screens/HostSessionActive";
+import PlayQuiz from "@/components/wrappers/PlayQuiz";
+import Home from "@/components/screens/Home";
 
 
 
@@ -17,6 +17,7 @@ import Home from "@/components/Screens/Home";
       HOSTSETUP: "hostSetUp",
       HOSTACTIVE: "hostActive",
       CREATE: "create",
+
      
   };
 

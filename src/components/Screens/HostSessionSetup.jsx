@@ -14,7 +14,7 @@ export default function HostSession({ onSessionStarted, goHome}) {
 
   async function startSession() {
     try {
-      const durationSeconds = 180
+      const durationSeconds = 900
       //Generate a session with a unique code
       const sessionCode = await generateUniqueSessionCode();
       const sessionRef = doc(db, "sessions", sessionCode);
@@ -27,6 +27,7 @@ export default function HostSession({ onSessionStarted, goHome}) {
         startTime: serverTimestamp(), // use server timestamp
         duration: durationSeconds,
         hostActive: true,
+        sessionStarted: false,
       });
     
 
@@ -42,22 +43,30 @@ export default function HostSession({ onSessionStarted, goHome}) {
 
   
   return (
-    <div style={{ display: "flex", width: "100%", minHeight: "100vh" }}>
+    <div className="p-0 w-screen h-screen box-border bg-sky-200 flex min-h-screen">
       {/* Left section */}
-      <div style={{ flex: 1, padding: "2rem" }}>
-        <h2>Ready to host question set:</h2>
-        <button onClick={startSession}>Start Session</button>
+      <div className="flex-1 p-8 space-x-4" >
+        <h2 className="text-xl text-black font-semibold mb-4">
+          Ready to host question set:
+          </h2>
+        <button
+          onClick={startSession}
+          className="mb-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+        >
+          Start Session
+        </button>
         <BackToHomeButton goHome={goHome} />
       </div>
 
       {/* Right section */}
-      <div style={{ width: "40%", padding: "2rem", borderLeft: "1px solid #ccc" }}>
+      <div className="w-2/5 p-8 border-l border-gray-300 overflow-auto">
         <QuestionSetLibrary
           onSelectA={(qs) => setQuestionSetDataA(qs)}
           onSelectB={(qs) => setQuestionSetDataB(qs)}
         />
       </div>
     </div>
+
   );
 
 
