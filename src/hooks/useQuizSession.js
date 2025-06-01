@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { db } from "@/firebase/firebase.js";
 
-export function useQuizSession(sessionId) {
+export function useQuizSession(sessionId, {onShieldCorrect, onSpellCorrect} = {}) {
 
   const [shieldQuestions, setShieldQuestions] = useState([]);
   const [spellQuestions, setSpellQuestions] = useState([])
@@ -134,9 +134,12 @@ export function useQuizSession(sessionId) {
     const isCorrect = shieldUserAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
 
     setShieldAnsweredCount((prev) => prev + 1);
-    if (isCorrect) setShieldCorrectCount((prev) => prev + 1);
+    if (isCorrect) {
+      onShieldCorrect();
+      setShieldCorrectCount((prev) => prev + 1);
+    }
 
-    await setDoc(doc(db, "sessions", sessionId, "players", playerId), { //What does this whole bit do?
+    await setDoc(doc(db, "sessions", sessionId, "players", playerId), { // Logs the last  answer for some reason
       lastShieldAnswer: shieldUserAnswer,
     }, { merge: true });
 
@@ -151,9 +154,12 @@ export function useQuizSession(sessionId) {
     const isCorrect = spellUserAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
 
     setSpellAnsweredCount((prev) => prev + 1);
-    if (isCorrect) setSpellCorrectCount((prev) => prev + 1);
+    if (isCorrect) {
+      setSpellCorrectCount((prev) => prev + 1);
+      onSpellCorrect();
+    }
 
-    await setDoc(doc(db, "sessions", sessionId, "players", playerId), {
+    await setDoc(doc(db, "sessions", sessionId, "players", playerId), { // Logs the last  answer for some reason
       lastSpellAnswer: spellUserAnswer,
     }, { merge: true });
 

@@ -10,6 +10,7 @@ import PlayQuiz from "@/components/Screens/PlayQuiz";
 import Home from "@/components/Screens/Home";
 
 
+
   const MODES = {
       HOME: "home",
       PLAY: "play",
@@ -94,7 +95,7 @@ export default function App() {
 
 
   return (
-    <div style={{ padding: 20, width: "100vw", height: "100vh", boxSizing: "border-box" }}>
+    <div className="p-0 w-screen h-screen box-border bg-gray-400">
 
       {mode === MODES.HOME && (
         <Home 
