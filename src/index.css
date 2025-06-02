@@ -27,23 +27,10 @@ body {
   
 }
 
-.glow-ring::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: inherit;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
-  z-index: -1;
-}
-
 
 
 /* Light mode overrides via media query */
 @media (prefers-color-scheme: light) {
-  :root {
-    /* Remove fixed colors; Tailwind’s dark mode handles this */
-  }
   a:hover {
     color: #747bff;
   }

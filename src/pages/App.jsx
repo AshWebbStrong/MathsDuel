@@ -6,7 +6,8 @@ import { doc, getDoc } from "firebase/firestore";
 import CreateQuestionSet from "@/components/screens/CreateQuestionSet";
 import HostSessionSetup from "@/components/screens/HostSessionSetup";
 import HostSessionActive from "@/components/screens/HostSessionActive";
-import PlayQuiz from "@/components/wrappers/PlayQuiz";
+import PlayQuiz from "@/components/wrappers/PlayQuiz.jsx";
+import HostQuiz from "@/components/wrappers/HostQuiz.jsx";
 import Home from "@/components/screens/Home";
 
 
@@ -15,7 +16,6 @@ import Home from "@/components/screens/Home";
       HOME: "home",
       PLAY: "play",
       HOSTSETUP: "hostSetUp",
-      HOSTACTIVE: "hostActive",
       CREATE: "create",
 
      
@@ -26,6 +26,7 @@ export default function App() {
   const [mode, setMode] = useState("home");
   const goHome = () => { setMode(MODES.HOME); setSessionId("");} // my return to the main menu button. Currently resets EVERYTHING like a refresh. Still  issue of holding onto these when quiz finishes
   const [sessionId, setSessionId] = useState("");
+  const [playerId, setPlayerId] = useState("");
 
   const [user, setUser] = useState(null);
 
@@ -112,8 +113,9 @@ export default function App() {
           onCreate = {() => 
               setMode(MODES.CREATE)
           } 
-          onJoined={(id) => {
-            setSessionId(id);
+          onJoined={(joinResult) => {
+            setSessionId(joinResult.sessionCode);
+            setPlayerId(joinResult.playerId)
             setMode(MODES.PLAY);
           }}
           user={user}
@@ -122,8 +124,10 @@ export default function App() {
       )}
 
       {mode === MODES.PLAY && (
-        <PlayQuiz sessionId={sessionId}
-                  goHome={goHome}/>
+        <PlayQuiz 
+          sessionId={sessionId}
+          playerId={playerId}                  
+          goHome={goHome}/>
       )}
 
 
@@ -136,21 +140,12 @@ export default function App() {
       {mode === MODES.HOSTSETUP && (
         user
         ? (
-            <HostSessionSetup 
-              onSessionStarted={(id) => {
-                setSessionId(id);
-                setMode(MODES.HOSTACTIVE);
-              }} 
+            <HostQuiz 
               goHome={goHome}/>
           )
          : goHome() 
       )}
 
-      {mode === MODES.HOSTACTIVE &&(
-        user
-        ?  <HostSessionActive sessionId={sessionId} goHome={goHome}/>
-        : goHome()
-      )}
     </div>
   );
 }

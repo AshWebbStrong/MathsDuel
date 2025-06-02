@@ -3,11 +3,10 @@ import React, { useState, useEffect, useRef} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import QuizTimer from "@/components/ui/QuizTimer";
 import QuestionCard from "@/components/ui/QuestionCard";
-import QuizSummary from "@/components/ui/QuizSummary";
 // import bgImage from "@/assets/fantasy-background.jpg"; // use your own background
 
 
-const QuizBattleScreen = ({timeLeft, trackShield, trackSpell}) => {
+const PlayerQuizBattleScreen = ({timeLeft, trackShield, trackSpell}) => {
 
   const [shieldGlowing, setShieldGlowing] = useState(false);
   const [spellAnimating, setSpellAnimating] = useState(false);
@@ -112,4 +111,4 @@ const QuizBattleScreen = ({timeLeft, trackShield, trackSpell}) => {
 };
 
 
-export default QuizBattleScreen;
+export default PlayerQuizBattleScreen;

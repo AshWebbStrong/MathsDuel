@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { db } from "@/firebase/firebase.js";
 
-export function useQuizSession(sessionId, {} = {}) {
+export function useQuizSession({sessionId, playerId}) {
 
   const [shieldQuestions, setShieldQuestions] = useState([]);
   const [spellQuestions, setSpellQuestions] = useState([])
@@ -23,7 +23,7 @@ export function useQuizSession(sessionId, {} = {}) {
   const [timeLeft, setTimeLeft] = useState(180);
   const [quizEnded, setQuizEnded] = useState(false);
   const [quizStarted, setQuizStarted] = useState(true);
-  const [playerId, setPlayerId] = useState(null);
+
 
   const [offset, setOffset] = useState(0); // store offset here
   const [session, setSession] = useState(null); // store session data
@@ -38,16 +38,6 @@ export function useQuizSession(sessionId, {} = {}) {
   };
 }, []);
 
-
-  // Generate or retrieve player ID once
-  useEffect(() => {
-    let id = sessionStorage.getItem("playerId");
-    if (!id) {
-      id = Math.random().toString(36).substr(2, 9);
-      sessionStorage.setItem("playerId", id);
-    }
-    setPlayerId(id);
-  }, []);
 
   // Listen for server time offset
   useEffect(() => {
@@ -160,10 +150,6 @@ export function useQuizSession(sessionId, {} = {}) {
       setShieldCorrectCount((prev) => prev + 1);
     }
 
-    await setDoc(doc(db, "sessions", sessionId, "players", playerId), { // Logs the last  answer for some reason
-      lastShieldAnswer: shieldUserAnswer,
-    }, { merge: true });
-
     setShieldIndex((prev) => (prev + 1) % shieldQuestions.length);
     setShieldUserAnswer("");
   };
@@ -178,10 +164,6 @@ export function useQuizSession(sessionId, {} = {}) {
     if (isCorrect) {
       setSpellCorrectCount((prev) => prev + 1);
     }
-
-    await setDoc(doc(db, "sessions", sessionId, "players", playerId), { // Logs the last  answer for some reason
-      lastSpellAnswer: spellUserAnswer,
-    }, { merge: true });
 
     setSpellIndex((prev) => (prev + 1) % spellQuestions.length);
     setSpellUserAnswer("");

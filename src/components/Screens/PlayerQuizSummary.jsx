@@ -1,5 +1,5 @@
 // components/QuizSummary.jsx
-export default function QuizSummary({ correct, total }) {
+export default function PlayerQuizSummary({ correct, total }) {
   return (
     <div>
       <h2>Quiz Finished!</h2>

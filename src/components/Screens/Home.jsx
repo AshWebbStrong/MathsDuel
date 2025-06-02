@@ -12,10 +12,9 @@ export default function Home({onLogin,onHost,onCreate, onJoined, user, onLogout}
     // Check if code is an active code & join the quiz
     async function handleJoin() {
 
-        const result = await HandleJoin(code);
-        if (result) { 
-            console.log(code + " accepted");
-            onJoined(result);
+        const joinResult = await HandleJoin(code);
+        if (joinResult) { 
+            onJoined(joinResult);
         }
     }
 
@@ -64,7 +63,9 @@ export default function Home({onLogin,onHost,onCreate, onJoined, user, onLogout}
             <img src="/images/piLogo2.png" alt="Description" className="w-48 h-auto" />
 
         </div>
-      {/* Top Center: single big input that acts like a button */}
+
+
+      {/* Top Center: single big input to join a quiz*/}
       <form 
         onSubmit={e => {
           e.preventDefault();

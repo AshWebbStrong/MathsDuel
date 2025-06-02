@@ -49,60 +49,63 @@ useEffect(() => {
     }
   };
 
-  return (
+return (
+  <div className="space-y-6">
     <div>
-      <h2 className="text-xl font-semibold mb-4">
+      <h2 className="text-xl font-semibold text-gray-800">
         {selectionCount === 0
           ? "Select the first question set"
           : selectionCount === 1
           ? "Select the second question set"
           : "✅ Both sets selected"}
       </h2>
+    </div>
 
-      {loading ? (
-        <p className="text-gray-600">Loading question sets...</p>
-      ) : error ? (
-        <p className="text-red-600 font-semibold">{error}</p>
-      ) : questionSets.length === 0 ? (
-        <p className="text-gray-600">No question sets found.</p>
-      ) : (
-        <ul>
-          {questionSets.map((qs) => (
-            <li key={qs.id} className="mb-2">
-              <button
-                onClick={() => handleSelect(qs)}
-                disabled={selectionCount === 2}
-                className={`
-                  font-semibold 
-                  text-left 
-                  px-2 py-1 
-                  rounded 
-                  transition 
-                  ${
-                    selectionCount === 2
-                      ? "cursor-not-allowed text-gray-400"
-                      : "hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  }
-                `}
-              >
-                {qs.title}
-              </button>{" "}
-              <span className="text-gray-600">{qs.questions.length} questions</span>
-            </li>
-          ))}
-        </ul>
-      )}
+    {loading ? (
+      <p className="text-gray-600 italic">Loading question sets...</p>
+    ) : error ? (
+      <p className="text-red-600 font-semibold">{error}</p>
+    ) : questionSets.length === 0 ? (
+      <p className="text-gray-600 italic">No question sets found.</p>
+    ) : (
+      <ul className="space-y-3">
+        {questionSets.map((qs) => (
+          <li key={qs.id} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm border hover:shadow-md transition">
+            <button
+              onClick={() => handleSelect(qs)}
+              disabled={selectionCount === 2}
+              className={`
+                text-left font-semibold w-full
+                ${
+                  selectionCount === 2
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "hover:text-indigo-700 transition"
+                }
+              `}
+            >
+              {qs.title}
+            </button>
+            <span className="text-sm text-gray-500 ml-4 whitespace-nowrap">
+              {qs.questions.length} questions
+            </span>
+          </li>
+        ))}
+      </ul>
+    )}
 
-      {selectionCount === 2 && (
+    {selectionCount === 2 && (
+      <div className="pt-4">
         <button
           onClick={() => setSelectionCount(0)}
-          className="mt-4 px-4 py-2 bg-yellow-400 rounded hover:bg-yellow-500 transition font-semibold"
+          className="w-full px-4 py-2 bg-yellow-400 text-gray-800 font-semibold rounded-md hover:bg-yellow-500 transition"
         >
           🔄 Reset Selection
         </button>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
+
 
   // return (
   //   <div>

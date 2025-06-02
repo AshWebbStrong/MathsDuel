@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuizSession, } from "@/hooks/useQuizSession.js";
-import QuizSummary from "@/components/ui/QuizSummary.jsx";
 import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
 import PlayerLobby from "@/components/screens/PlayerLobby.jsx";
-import QuizBattleScreen from "@/components/screens/QuizBattleScreen.jsx";
+import PlayerQuizBattleScreen from "@/components/screens/PlayerQuizBattleScreen.jsx";
+import PlayerQuizSummary from "@/components/screens/PlayerQuizSummary.jsx";
 
-export default function PlayQuiz({ sessionId, goHome }) {
+export default function PlayQuiz({ sessionId, playerId, goHome }) {
   
   const {
     trackShield,
@@ -14,7 +14,7 @@ export default function PlayQuiz({ sessionId, goHome }) {
     quizStarted,
     quizEnded,
 
-  } = useQuizSession(sessionId);
+  } = useQuizSession(sessionId, playerId);
 
 
   return (
@@ -27,21 +27,22 @@ export default function PlayQuiz({ sessionId, goHome }) {
           </>
         )
         :
-          quizEnded ? (
-            <>
-              <QuizSummary correct={trackShield.correctCount} total={trackShield.answeredCount} title="Left Side" />
-              <QuizSummary correct={trackSpell.correctCount} total={trackSpell.answeredCount} title="Right Side" />
-            </>
+          !quizEnded ? (
+              <PlayerQuizBattleScreen
+                trackShield={trackShield}
+                trackSpell={trackSpell}
+                timeLeft ={timeLeft}
+              />           
           ) : (
-               <QuizBattleScreen
-                  trackShield={trackShield}
-                  trackSpell={trackSpell}
-                  timeLeft ={timeLeft}
-                />
+              <>
+              <PlayerQuizSummary correct={trackShield.correctCount} total={trackShield.answeredCount} title="Left Side" />
+              <PlayerQuizSummary correct={trackSpell.correctCount} total={trackSpell.answeredCount} title="Right Side" />
+            </>            
           )
         }
         <BackToHomeButton goHome={goHome} />
       </div>
   );
+
 }
 
