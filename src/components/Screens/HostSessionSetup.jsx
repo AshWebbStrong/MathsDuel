@@ -38,7 +38,7 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
         questionSetNameSpell: questionSetDataB?.title,
         quizMode: quizMode,
         startTime: serverTimestamp(),
-        quizDuration: quizDuration,
+        quizDuration: quizDuration * 60,
         startShielded: startShielded,
         hostActive: true,
         sessionStarted: false,

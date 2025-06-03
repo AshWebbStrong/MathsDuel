@@ -20,15 +20,16 @@ export function useQuizSession({sessionId, playerId}) {
   const [shieldAnsweredCount, setShieldAnsweredCount] = useState(0);
   const [spellAnsweredCount, setSpellAnsweredCount] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(180);
+
   const [quizEnded, setQuizEnded] = useState(false);
-  const [quizStarted, setQuizStarted] = useState(true);
+  const [quizStarted, setQuizStarted] = useState(false);
+
+  const [timeLeft, setTimeLeft] = useState(180);
+  const [localTimeLeft, setLocalTimeLeft] = useState(null);
+  const localTimerRef = useRef(null);
 
 
-  const [offset, setOffset] = useState(0); // store offset here
   const [session, setSession] = useState(null); // store session data
-
-  const timerRef = useRef(null);
 
   //error checking
   useEffect(() => {
@@ -38,25 +39,16 @@ export function useQuizSession({sessionId, playerId}) {
   };
 }, []);
 
-
-  // Listen for server time offset
-  useEffect(() => {
-    const offsetRef = ref(getDatabase(), ".info/serverTimeOffset");
-    const unsubscribe = onValue(offsetRef, (snap) => {
-      const newOffset = snap.val() || 0;
-      setOffset(newOffset);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   // Listen for session snapshot updates
   useEffect(() => {
     if (!sessionId) return;
 
     const sessionRef = doc(db, "sessions", sessionId);
     const unsub = onSnapshot(sessionRef, (snap) => {
-      const data = snap.data();
+    const data = snap.data();
+      if (data?.timeLeft !== undefined) {
+      setTimeLeft(data.timeLeft);
+    }
       setSession(data);
 
     });
@@ -66,21 +58,21 @@ export function useQuizSession({sessionId, playerId}) {
 
     
     // Listen to see if host is still in the game
-    useEffect(() => {
-      if (session?.hostActive === false) {
-        alert("Host has left. The session will now end.");
-        setQuizEnded(true);
-        // handle kicking players out or redirecting
-      }
-  }, [session?.hostActive]);
+useEffect(() => {
+  console.log("hostActive changed:", session?.hostActive);
+  if (session?.hostActive === false) {
+    alert("Host has left. The session will now end.");
+    setQuizEnded(true);
+  }
+}, [session?.hostActive]);
 
     // Listens to see if host has started the game
     useEffect(() => {
-      if (session?.gameStarted === true) {
+      if (session?.sessionStarted === true) {
         setQuizStarted(true);
         console.log("quiz has started");
       }
-  }, [session?.gameStarted]);
+  }, [session?.sessionStarted]);
 
 
 
@@ -111,32 +103,30 @@ export function useQuizSession({sessionId, playerId}) {
   }, [session?.questionSetIdShield, session?.questionSetIdSpell]);
 
 
-  // Timer management - depends on session and offset
- useEffect(() => {
-  if (!session?.startTime || !session?.duration || offset == null) return;
+  // Player Time management
+  useEffect(() => {
+    if (timeLeft === undefined || timeLeft === null) return;
 
-  const startTimestamp = session.startTime.toMillis();
-  const endTimestamp = startTimestamp + session.duration * 1000
+    // Sync local timer to firestore timer value
+    setLocalTimeLeft(timeLeft);
 
-  const updateTimer = () => {
-    const estimatedNow = Date.now() + offset;
-    const remaining = Math.max(0, Math.floor((endTimestamp - estimatedNow) / 1000));
-    setTimeLeft(remaining);
-    if (remaining === 0) {
-      setQuizEnded(true);
-      clearInterval(timerRef.current);
-    }
-  };
+    // Clear any existing interval to avoid duplicates
+    if (localTimerRef.current) clearInterval(localTimerRef.current);
 
-  updateTimer(); 
+    // Start local countdown
+    localTimerRef.current = setInterval(() => {
+      setLocalTimeLeft(prev => {
+        if (prev === null || prev <= 0) {
+          clearInterval(localTimerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  
-  timerRef.current = setInterval(updateTimer, 1000);
+    return () => clearInterval(localTimerRef.current);
+  }, [timeLeft]);  
 
-  return () => {
-    clearInterval(timerRef.current);
-  };
-}, [session?.startTime, session?.duration, offset]);
 
   // Dealing with questions : checking if correct, moving onto next question, resetting answer input.
   const submitShieldAnswer = async () => {
@@ -187,7 +177,7 @@ export function useQuizSession({sessionId, playerId}) {
     answeredCount: spellAnsweredCount,
     correctCount: spellCorrectCount,
   },
-  timeLeft,
+  localTimeLeft,
   quizEnded,
   quizStarted,
 };

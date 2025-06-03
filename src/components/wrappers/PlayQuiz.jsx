@@ -10,11 +10,11 @@ export default function PlayQuiz({ sessionId, playerId, goHome }) {
   const {
     trackShield,
     trackSpell,
-    timeLeft,
+    localTimeLeft,
     quizStarted,
     quizEnded,
 
-  } = useQuizSession(sessionId, playerId);
+  } = useQuizSession({sessionId, playerId});
 
 
   return (
@@ -31,7 +31,7 @@ export default function PlayQuiz({ sessionId, playerId, goHome }) {
               <PlayerQuizBattleScreen
                 trackShield={trackShield}
                 trackSpell={trackSpell}
-                timeLeft ={timeLeft}
+                timeLeft ={localTimeLeft}
               />           
           ) : (
               <>

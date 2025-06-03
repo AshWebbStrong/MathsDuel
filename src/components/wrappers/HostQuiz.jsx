@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useQuizSession, } from "@/hooks/useQuizSession.js";
-import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
+import { getDoc, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { db } from "@/firebase/firebase.js";
 import HostSessionSetup from "@/components/screens/HostSessionSetup.jsx";
 import HostSessionLobby from "@/components/screens/HostSessionLobby.jsx";
 import HostSessionActive from "@/components/screens/HostSessionActive.jsx";
@@ -14,6 +14,28 @@ const [sessionId, setSessionId] = useState("");
 const [quizSetup, setQuizSetup] = useState(false);    
 const [quizStarted, setQuizStarted] = useState(false);
 const [quizEnded, setQuizEnded] = useState(false);
+
+useEffect(() => {
+    if (!sessionId) return; 
+    console.log("HostSessionActive mounted — setting hostActive = true");
+    const sessionRef = doc(db, "sessions", sessionId);
+    updateDoc(sessionRef, { hostActive: true });
+
+    const handleBeforeUnload = async () => {
+      console.log("Window unloading — setting hostActive = false");
+      await updateDoc(sessionRef, { hostActive: false });
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      console.log("HostSessionActive unmounting — setting hostActive = false");
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      updateDoc(sessionRef, { hostActive: false });
+    };
+  }, [sessionId]);
+
+
 
   return (
     
@@ -32,18 +54,27 @@ const [quizEnded, setQuizEnded] = useState(false);
                 <HostSessionLobby
                 goHome={goHome}
                 sessionId = {sessionId}
+                onStartQuiz ={ () =>
+                    setQuizStarted(true)
+                }
 
                 />
             ) 
             :
                 !quizEnded ? (
-                    <HostSessionActive />
+                    <HostSessionActive
+                    goHome={goHome}
+                    sessionId = {sessionId}
+                    onFinishQuiz = { () =>
+                        setQuizEnded(true)
+                    }
+                    
+                    />
                 )
                 
                 : ( <HostSessionSummary />                 
                 )
         }
-        <BackToHomeButton goHome={goHome} />
       </div>
   );
 
