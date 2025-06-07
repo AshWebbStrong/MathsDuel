@@ -4,7 +4,7 @@ import { db } from "@/firebase/firebase.js";
 import HostSessionSetup from "@/components/screens/HostSessionSetup.jsx";
 import HostSessionLobby from "@/components/screens/HostSessionLobby.jsx";
 import HostSessionActive from "@/components/screens/HostSessionActive.jsx";
-import HostSessionSummary from "@/components/screens/HostSessionActive.jsx";
+import HostSessionSummary from "@/components/screens/HostSessionSummary.jsx";
 
 export default function HostQuiz({ goHome }) {
 
@@ -13,7 +13,7 @@ const [sessionId, setSessionId] = useState("");
 
 const [quizSetup, setQuizSetup] = useState(false);    
 const [quizStarted, setQuizStarted] = useState(false);
-const [quizEnded, setQuizEnded] = useState(false);
+const [quizFinished, setQuizFinished] = useState(false);
 
 useEffect(() => {
     if (!sessionId) return; 
@@ -61,12 +61,12 @@ useEffect(() => {
                 />
             ) 
             :
-                !quizEnded ? (
+                !quizFinished ? (
                     <HostSessionActive
                     goHome={goHome}
                     sessionId = {sessionId}
                     onFinishQuiz = { () =>
-                        setQuizEnded(true)
+                        setQuizFinished(true)
                     }
                     
                     />

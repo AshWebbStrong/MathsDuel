@@ -2,8 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { db } from "@/firebase/firebase.js";
+import { usePracticeQuizSession } from "@/hooks/usePracticeQuizSession.js";
+import { useDuelQuizSession } from "@/hooks/useDuelQuizSession.js";
 
 export function useQuizSession({sessionId, playerId}) {
+
+  const [quizMode, setQuizMode] = useState(null);
+  const [session, setSession] = useState(null); // store session data
 
   const [shieldQuestions, setShieldQuestions] = useState([]);
   const [spellQuestions, setSpellQuestions] = useState([])
@@ -21,15 +26,13 @@ export function useQuizSession({sessionId, playerId}) {
   const [spellAnsweredCount, setSpellAnsweredCount] = useState(0);
 
 
-  const [quizEnded, setQuizEnded] = useState(false);
+  const [quizFinished, setQuizFinished] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
 
-  const [timeLeft, setTimeLeft] = useState(180);
+  const [timeLeft, setTimeLeft] = useState(null);
   const [localTimeLeft, setLocalTimeLeft] = useState(null);
   const localTimerRef = useRef(null);
 
-
-  const [session, setSession] = useState(null); // store session data
 
   //error checking
   useEffect(() => {
@@ -46,62 +49,42 @@ export function useQuizSession({sessionId, playerId}) {
     const sessionRef = doc(db, "sessions", sessionId);
     const unsub = onSnapshot(sessionRef, (snap) => {
     const data = snap.data();
-      if (data?.timeLeft !== undefined) {
-      setTimeLeft(data.timeLeft);
-    }
+      setQuizMode(data.quizMode);
       setSession(data);
 
-    });
+    if (data?.timeLeft !== undefined && timeLeft === null) { //Should only set timeLeft once at the start
+      setTimeLeft(data.timeLeft);
+    }
+  });
 
     return () => unsub();
   }, [sessionId]);
 
+
     
-    // Listen to see if host is still in the game
-useEffect(() => {
-  console.log("hostActive changed:", session?.hostActive);
-  if (session?.hostActive === false) {
-    alert("Host has left. The session will now end.");
-    setQuizEnded(true);
-  }
-}, [session?.hostActive]);
+      // Listen to see if host is still in the game
+  useEffect(() => {
+    console.log("hostActive changed:", session?.hostActive);
+    if (session?.hostActive === false) {
+      alert("Host has left. The session will now end.");
+      setQuizFinished(true);
+    }
+  }, [session?.hostActive]);
 
     // Listens to see if host has started the game
-    useEffect(() => {
-      if (session?.sessionStarted === true) {
-        setQuizStarted(true);
-        console.log("quiz has started");
-      }
+  useEffect(() => {
+    if (session?.sessionStarted === true) {
+      setQuizStarted(true);
+      console.log("quiz has started");
+    }
   }, [session?.sessionStarted]);
 
-
-
-  // Load questions once when session questionSetId is available
+  // Listens to see if host has finished the game
   useEffect(() => {
-    async function loadBothQuestionSets() {
-      if (!session?.questionSetIdShield || !session?.questionSetIdSpell) return;
-
-      try {
-        const shieldSnap = await getDoc(doc(db, "questionSets", session.questionSetIdShield));
-        const spellSnap = await getDoc(doc(db, "questionSets", session.questionSetIdSpell));
-
-        if (shieldSnap.exists()) {
-          const shuffled = shieldSnap.data().questions.sort(() => Math.random() - 0.5);
-          setShieldQuestions(shuffled);
-        }
-
-        if (spellSnap.exists()) {
-          const shuffled = spellSnap.data().questions.sort(() => Math.random() - 0.5);
-          setSpellQuestions(shuffled);
-        }
-      } catch (err) {
-        console.error("Error loading question sets:", err);
-      }
+    if (session?.sessionFinished === true) {
+      setQuizFinished(true);
     }
-
-    loadBothQuestionSets();
-  }, [session?.questionSetIdShield, session?.questionSetIdSpell]);
-
+  }, [session?.sessionFinished]);
 
   // Player Time management
   useEffect(() => {
@@ -124,61 +107,35 @@ useEffect(() => {
       });
     }, 1000);
 
+    
+    if (localTimeLeft === 0) {
+      setQuizFinished(true)
+    }
+
     return () => clearInterval(localTimerRef.current);
   }, [timeLeft]);  
 
+    // Delegate to mode-specific hooks *passing session and playerId*
 
-  // Dealing with questions : checking if correct, moving onto next question, resetting answer input.
-  const submitShieldAnswer = async () => {
-    const question = shieldQuestions[shieldIndex];
-    if (!shieldUserAnswer || !playerId || !question) return;
 
-    const isCorrect = shieldUserAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
+    
+  const practiceState = usePracticeQuizSession(session, playerId);
+  const duelState = useDuelQuizSession(session, playerId);
 
-    setShieldAnsweredCount((prev) => prev + 1);
-    if (isCorrect) {
-      setShieldCorrectCount((prev) => prev + 1);
-    }
-
-    setShieldIndex((prev) => (prev + 1) % shieldQuestions.length);
-    setShieldUserAnswer("");
-  };
-
-  const submitSpellAnswer = async () => {
-    const question = spellQuestions[spellIndex];
-    if (!spellUserAnswer || !playerId || !question) return;
-
-    const isCorrect = spellUserAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
-
-    setSpellAnsweredCount((prev) => prev + 1);
-    if (isCorrect) {
-      setSpellCorrectCount((prev) => prev + 1);
-    }
-
-    setSpellIndex((prev) => (prev + 1) % spellQuestions.length);
-    setSpellUserAnswer("");
-  };
+  // Combine results depending on mode
+  let modeState = {};
+  if (quizMode === "practice") {
+    modeState = practiceState;
+  } else if (quizMode === "duel") {
+    modeState = duelState;
+  }
 
 
   return {
-  trackShield: {
-    currentQuestion: shieldQuestions[shieldIndex],
-    playerAnswer: shieldUserAnswer,
-    setPlayerAnswer: setShieldUserAnswer,
-    submitAnswer: submitShieldAnswer,
-    answeredCount: shieldAnsweredCount,
-    correctCount: shieldCorrectCount,
-  },
-  trackSpell: {
-    currentQuestion: spellQuestions[spellIndex],
-    playerAnswer: spellUserAnswer,
-    setPlayerAnswer: setSpellUserAnswer,
-    submitAnswer: submitSpellAnswer,
-    answeredCount: spellAnsweredCount,
-    correctCount: spellCorrectCount,
-  },
+
+  ...modeState,
   localTimeLeft,
-  quizEnded,
+  quizFinished,
   quizStarted,
 };
 

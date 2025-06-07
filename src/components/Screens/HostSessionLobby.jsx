@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db} from "@/firebase/firebase";
-import { doc, collection, onSnapshot, updateDoc, serverTimestamp  } from "firebase/firestore";
+import { getDocs, doc, collection, onSnapshot, updateDoc, serverTimestamp  } from "firebase/firestore";
 import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
 
 export default function HostSessionLobby({ sessionId, onStartQuiz, goHome }) {

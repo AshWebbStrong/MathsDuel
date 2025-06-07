@@ -1,5 +1,4 @@
-// components/QuestionCard.jsx
-export default function QuestionCard({ question, answer, onAnswerChange, onSubmit }) {
+export default function QuestionCard({ question, answer, onAnswerChange, onSubmit, disabled = false }) {
   if (!question) return <p>Loading question...</p>;
 
   return (
@@ -9,8 +8,16 @@ export default function QuestionCard({ question, answer, onAnswerChange, onSubmi
         value={answer}
         onChange={(e) => onAnswerChange(e.target.value)}
         placeholder="Type your answer"
+        disabled={disabled}            // Disable input if disabled is true
+        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "text" }}
       />
-      <button onClick={onSubmit}>Submit</button>
+      <button 
+        onClick={onSubmit} 
+        disabled={disabled}           // Disable button if disabled is true
+        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+      >
+        Submit
+      </button>
     </div>
   );
 }

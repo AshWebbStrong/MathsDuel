@@ -32,16 +32,19 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
       const sessionRef = doc(db, "sessions", sessionCode);
 
       await setDoc(sessionRef, {
+        id: sessionRef.id,
         questionSetIdShield: questionSetDataA?.id,
         questionSetNameShield: questionSetDataA?.title,
         questionSetIdSpell: questionSetDataB?.id,
         questionSetNameSpell: questionSetDataB?.title,
         quizMode: quizMode,
         startTime: serverTimestamp(),
+        finishTime: null,
         quizDuration: quizDuration * 60,
         startShielded: startShielded,
         hostActive: true,
         sessionStarted: false,
+        sessionFinished: false,
       });
 
       onSessionStarted(sessionRef.id);
@@ -94,8 +97,8 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
             </label>
             <input
               type="range"
-              min="2"
-              max="10"
+              min="0.5"
+              max="5"
               value={quizDuration}
               onChange={(e) => setQuizDuration(Number(e.target.value))}
               className="w-full accent-indigo-600"

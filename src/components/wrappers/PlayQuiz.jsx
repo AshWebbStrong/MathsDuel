@@ -10,9 +10,13 @@ export default function PlayQuiz({ sessionId, playerId, goHome }) {
   const {
     trackShield,
     trackSpell,
+
+    opponentState,
+    hitsReceived,
+
     localTimeLeft,
     quizStarted,
-    quizEnded,
+    quizFinished,
 
   } = useQuizSession({sessionId, playerId});
 
@@ -20,24 +24,38 @@ export default function PlayQuiz({ sessionId, playerId, goHome }) {
   return (
     
       <div style={{ padding: "0rem", color: "white" }}>
-        {!quizStarted ? ( 
-          <>
-          <PlayerLobby />
-            <h3>quiz not started</h3>
-          </>
-        )
-        :
-          !quizEnded ? (
+        {
+          !quizStarted ? (
+            <>
+              <PlayerLobby />
+              <h3>quiz not started</h3>
+            </>
+          ) : !quizFinished ? (
+            trackShield && trackSpell ? (
               <PlayerQuizBattleScreen
                 trackShield={trackShield}
                 trackSpell={trackSpell}
-                timeLeft ={localTimeLeft}
-              />           
+                timeLeft={localTimeLeft}
+                hitsReceived = {hitsReceived}
+                opponentState = {opponentState}
+
+              />
+            ) : (
+              <div>Loading quiz data...</div>
+            )
           ) : (
-              <>
-              <PlayerQuizSummary correct={trackShield.correctCount} total={trackShield.answeredCount} title="Left Side" />
-              <PlayerQuizSummary correct={trackSpell.correctCount} total={trackSpell.answeredCount} title="Right Side" />
-            </>            
+            <>
+              <PlayerQuizSummary
+                correct={trackShield?.correctCount ?? 0}
+                total={trackShield?.answeredCount ?? 0}
+                title="Left Side"
+              />
+              <PlayerQuizSummary
+                correct={trackSpell?.correctCount ?? 0}
+                total={trackSpell?.answeredCount ?? 0}
+                title="Right Side"
+              />
+            </>
           )
         }
         <BackToHomeButton goHome={goHome} />
