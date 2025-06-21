@@ -60,7 +60,7 @@ export default function Home({onLogin,onHost,onCreate, onJoined, user, onLogout}
     >
 
         <div className="row-start-1 col-start-1 flex items-start px-5 scale-80">
-            <img src="/images/piLogo2.png" alt="Description" className="w-48 h-auto" />
+
 
         </div>
 

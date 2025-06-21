@@ -45,6 +45,13 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
         hostActive: true,
         sessionStarted: false,
         sessionFinished: false,
+        currentRound: 0,
+        totalRounds: 3,                // or get from your settings
+        roundDuration: 45,             // seconds per round
+        summaryDuration: 5,            // summary screen duration
+        roundState: "waiting",         // initial state before rounds start
+        roundStartTime: null,
+        pairs: [],
       });
 
       onSessionStarted(sessionRef.id);

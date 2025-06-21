@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
     "firebase": "^11.8.1",
     "framer-motion": "^12.15.0",
+    "mathjs": "^14.5.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

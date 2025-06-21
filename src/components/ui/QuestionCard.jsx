@@ -1,23 +1,45 @@
-export default function QuestionCard({ question, answer, onAnswerChange, onSubmit, disabled = false }) {
+export default function QuestionCard({
+  question,
+  answer,
+  onAnswerChange,
+  onSubmit,
+  onFocus,
+  onBlur,
+  inputRef,
+  disabled = false,
+}) {
   if (!question) return <p>Loading question...</p>;
-
+  
   return (
-    <div>
-      <h3>{question.question}</h3>
+    <div className="w-full bg-white/40 text-gray-900 p-4 rounded-none shadow-md backdrop-blur-md">
+      <h3 className="text-2xl font-bold mb-4">{question.question}</h3>
+
       <input
         value={answer}
         onChange={(e) => onAnswerChange(e.target.value)}
-        placeholder="Type your answer"
-        disabled={disabled}            // Disable input if disabled is true
-        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "text" }}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        readOnly // manual typing disabled, input via keyboard only
+        placeholder="Tap keys below"
+        disabled={disabled}
+        ref={inputRef}
+        className={`w-full p-3 rounded-md text-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4 ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       />
-      <button 
-        onClick={onSubmit} 
-        disabled={disabled}           // Disable button if disabled is true
-        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+
+      <button
+        onClick={onSubmit}
+        disabled={disabled}
+        className={`w-full py-3 px-4 mt-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-md text-lg font-medium shadow hover:from-blue-600 hover:to-blue-800 transition-all duration-200 ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         Submit
       </button>
     </div>
   );
 }
+
+
+

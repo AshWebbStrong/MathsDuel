@@ -8,6 +8,7 @@ export default function QuestionSetLibrary({ onSelectA, onSelectB}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectionCount, setSelectionCount] = useState(0);
+  const [selectedA, setSelectedA] = useState(null);
 
 //error checking
 useEffect(() => {
@@ -35,12 +36,13 @@ useEffect(() => {
   loadQuestionSets();
 }, []);
 
- const handleSelect = (qs) => {
+  const handleSelect = (qs) => {
     if (selectionCount === 0) {
       onSelectA(qs);
+      setSelectedA(qs);
       setSelectionCount(1);
     } else if (selectionCount === 1) {
-      if (qs.id === questionSets[0]?.id) {
+      if (qs.id === selectedA?.id) {
         alert("Please choose a different question set.");
         return;
       }

@@ -1,22 +1,27 @@
 import { useEffect, useState, useRef } from "react";
-import { collection, getDocs, onSnapshot, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  getDoc,
+  onSnapshot,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "@/firebase/firebase.js";
 import BackToHomeButton from "@/components/ui/BackToHomeButton.jsx";
 import QuizTimer from "@/components/ui/QuizTimer";
 
 export default function HostSessionActive({ sessionId, goHome, onFinishQuiz }) {
+  const [session, setSession] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const timerRef = useRef(null);
 
-const timerRef = useRef(null);
-const [timeLeft, setTimeLeft] = useState(180);
-const [offset, setOffset] = useState(0); // store offset here
-const [session, setSession] = useState(null); // store session data
-
+  // Utility: live session listener
   useEffect(() => {
     if (!sessionId) return;
-
     const sessionRef = doc(db, "sessions", sessionId);
-
-    // Live listener
     const unsubscribe = onSnapshot(sessionRef, (docSnap) => {
       if (docSnap.exists()) {
         setSession(docSnap.data());
@@ -24,151 +29,218 @@ const [session, setSession] = useState(null); // store session data
         console.warn("Session not found");
       }
     });
-
-
-
-    return () => unsubscribe();
+    return unsubscribe;
   }, [sessionId]);
 
-  const [pairsAssigned, setPairsAssigned] = useState(false);
-
-  useEffect(() => {
-    if (session && session.quizMode === "duel" && !pairsAssigned) {
-      assignDuelPairs();
-      setPairsAssigned(true);
-    }
-  }, [session, pairsAssigned]);
-
-
-  const assignDuelPairs = async () => {
-  if (!sessionId) return;
-
-  try {
+  // Pair players randomly
+  async function generatePairs() {
     const playersRef = collection(db, "sessions", sessionId, "players");
     const playersSnapshot = await getDocs(playersRef);
-    const allPlayers = playersSnapshot.docs.map(doc => ({
+    const allPlayers = playersSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
     if (allPlayers.length === 0) {
       console.warn("No players to pair.");
-      return;
+      return [];
     }
 
-    // Shuffle players randomly
     const shuffled = [...allPlayers].sort(() => 0.5 - Math.random());
+    const pairs = [];
 
     while (shuffled.length >= 2) {
       const p1 = shuffled.pop();
       const p2 = shuffled.pop();
-
-      // Update p1 document with opponentId = p2.id and initial state
-      await updateDoc(doc(db, "sessions", sessionId, "players", p1.id), {
-        opponentId: p2.id,
-        shieldActive: false,
-        hit: false,
-        waiting: false,
-      });
-
-      // Update p2 document with opponentId = p1.id and initial state
-      await updateDoc(doc(db, "sessions", sessionId, "players", p2.id), {
-        opponentId: p1.id,
-        shieldActive: false,
-        hit: false,
-        waiting: false,
-      });
+      pairs.push({ playerAId: p1.id, playerBId: p2.id });
     }
-
-    // Handle odd player left
     if (shuffled.length === 1) {
-      const lonelyPlayer = shuffled.pop();
-      await updateDoc(doc(db, "sessions", sessionId, "players", lonelyPlayer.id), {
-        opponentId: null,
-        waiting: true,
+      pairs.push({ playerAId: shuffled.pop().id, playerBId: null });
+    }
+    return pairs;
+  }
+
+  // Core: run all rounds
+  const runRoundCycle = async () => {
+    if (!sessionId) return;
+    const sessionRef = doc(db, "sessions", sessionId);
+
+    const totalRounds = session?.totalRounds ?? 3;
+    const roundDuration = session?.roundDuration ?? 45;
+    const summaryDuration = session?.summaryDuration ?? 5;
+    const prepareDuration = 2;
+
+    // === Prepare stage (only once at the start) ===
+    await updateDoc(sessionRef, {
+      roundState: "prepare",
+      currentRound: 0,
+      pairs: [],
+      roundStartTime: null,
+    });
+
+    setTimeLeft(prepareDuration);
+    await sleepTimer(prepareDuration);
+
+    // === Run each round ===
+    for (let round = 1; round <= totalRounds; round++) {
+      console.log(`Starting round ${round}`);
+
+      // Reset hits/shields and generate pairs
+      await resetHitsAndShields();
+      const pairs = await generatePairs();
+
+      // Assign pairs to session
+      await updateDoc(sessionRef, { pairs });
+
+      // Reload questions for each player and clear their inputs
+      await reloadPlayerQuestionsAndClearInputs(pairs);
+
+      // Start active round
+      await updateDoc(sessionRef, {
+        roundState: "active",
+        currentRound: round,
+        roundStartTime: serverTimestamp(),
       });
+
+      setTimeLeft(roundDuration);
+      await sleepTimer(roundDuration);
+
+      // Summary
+      await updateDoc(sessionRef, { roundState: "summary" });
+
+      setTimeLeft(summaryDuration);
+      await sleepTimer(summaryDuration);
     }
 
-    console.log("Duel pairs assigned individually to player docs");
-  } catch (err) {
-    console.error("Failed to assign duel pairs:", err);
-  }
-};
+    // Done
+    onFinishQuiz();
+  };
 
+  async function reloadPlayerQuestionsAndClearInputs(pairs) {
+    const questionSetIdShield = session?.questionSetIdShield;
+    const questionSetIdSpell = session?.questionSetIdSpell;
+    if (!questionSetIdShield || !questionSetIdSpell) return;
 
-  // Quiz finishing
-    const handleFinishQuiz = async () => {
-        if (!sessionId) {
-          console.error("No sessionId provided");
-          return;
-        }
+    // Load question sets
+    const shieldSnap = await getDoc(doc(db, "questionSets", questionSetIdShield));
+    const spellSnap = await getDoc(doc(db, "questionSets", questionSetIdSpell));
 
-        console.log("Finishing quiz for session:", sessionId);
+    if (!shieldSnap.exists() || !spellSnap.exists()) {
+      console.warn("Question sets missing");
+      return;
+    }
 
-        await updateDoc(doc(db, "sessions", sessionId), {
-        sessionFinished: true,
-        finishTime: serverTimestamp(),
+    const shieldQuestions = shieldSnap.data().questions || [];
+    const spellQuestions = spellSnap.data().questions || [];
+
+    // Prepare batched update for players
+    const batch = writeBatch(db);
+
+    for (const pair of pairs) {
+      for (const playerId of [pair.playerAId, pair.playerBId]) {
+        if (!playerId) continue;
+
+        const playerRef = doc(db, "sessions", sessionId, "players", playerId);
+
+        batch.update(playerRef, {
+          shieldQuestions: shuffleArray(shieldQuestions),
+          spellQuestions: shuffleArray(spellQuestions),
+          shieldUserAnswer: "",
+          spellUserAnswer: "",
+          shieldIndex: 0,
+          spellIndex: 0,
         });
-        onFinishQuiz();
-    };
-
-
-  // Timer management - depends on session and offset
-useEffect(() => {
-  if (!session?.startTime || !session?.quizDuration || offset == null) return;
-
-  const startTimestamp = session.startTime.toMillis();
-  const endTimestamp = startTimestamp + session.quizDuration * 1000;
-  if (!sessionId) return;
-  const sessionRef = doc(db, "sessions", sessionId);
-
-    let lastWrite = null;
-
-    const updateTimer = async () => {
-    const estimatedNow = Date.now() + offset;
-    const remaining = Math.max(0, Math.floor((endTimestamp - estimatedNow) / 1000));
-    setTimeLeft(remaining);
-
-// Write immediately if it's the first run
-    if (lastWrite === null || remaining % 5 === 0 && remaining !== lastWrite) {
-      lastWrite = remaining;
-      try {
-        await updateDoc(sessionRef, { timeLeft: remaining });
-      } catch (err) {
-        console.error("Failed to update timeLeft in Firestore:", err);
       }
     }
 
+    await batch.commit();
+  }
 
-    if (remaining === 0) {
-      onFinishQuiz()
-      clearInterval(timerRef.current);
-    }
+  // Utility shuffle function
+  function shuffleArray(array) {
+    return [...array].sort(() => Math.random() - 0.5);
+  }
+
+
+  // Utility: sleep with live countdown
+  const sleepTimer = (seconds) => {
+    return new Promise((resolve) => {
+      let remaining = seconds;
+      setTimeLeft(remaining);
+
+      if (timerRef.current) clearInterval(timerRef.current);
+
+      timerRef.current = setInterval(() => {
+        remaining -= 1;
+        setTimeLeft(remaining);
+
+        if (remaining <= 0) {
+          clearInterval(timerRef.current);
+          resolve();
+        }
+      }, 1000);
+    });
   };
 
-  updateTimer();
-  timerRef.current = setInterval(updateTimer, 1000);
+  // Run round cycle when session starts
+  useEffect(() => {
+    if (session?.sessionStarted && session.roundState === "waiting") {
+      runRoundCycle();
+    }
+  }, [session]);
 
-  return () => clearInterval(timerRef.current);
-}, [session?.startTime, session?.quizDuration, offset]);
+  // Host can finish manually
+  const handleFinishQuiz = async () => {
+    if (!sessionId) return;
+    await updateDoc(doc(db, "sessions", sessionId), {
+      sessionFinished: true,
+      finishTime: serverTimestamp(),
+      roundState: "finished",
+    });
+    onFinishQuiz();
+  };
 
+  // Reset player states
+  async function resetHitsAndShields() {
+    const playersRef = collection(db, "sessions", sessionId, "players");
+    const playersSnapshot = await getDocs(playersRef);
+    const batch = writeBatch(db);
+
+    playersSnapshot.forEach((docSnap) => {
+      batch.update(docSnap.ref, {
+        hitsReceived: 0,
+        shieldActive: false,
+      });
+    });
+
+    await batch.commit();
+  }
 
   return (
-    <div>
-      <h2>Hosting session! {sessionId}</h2>
-      <BackToHomeButton goHome={goHome} />
-      <button
-      onClick={handleFinishQuiz}
-      className="mt-4 px-5 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md
-                 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300
-                 transition duration-200"
-    >
-      End Quiz
-    </button>
-      <div className="w-full text-center mb-6">
+    <div className="p-6 max-w-lg mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Hosting Session: {sessionId}</h2>
+
+      {session && (
+        <>
+          <p>
+            Round: {session.currentRound ?? 0} / {session.totalRounds ?? "?"}
+          </p>
+          <p>Status: {session.roundState ?? "waiting"}</p>
+        </>
+      )}
+
+      <div className="my-6">
         <QuizTimer timeLeft={timeLeft} />
       </div>
+
+      <button
+        onClick={handleFinishQuiz}
+        className="mb-6 px-5 py-3 bg-red-600 text-white rounded hover:bg-red-700 transition"
+      >
+        End Quiz Now
+      </button>
+
+      <BackToHomeButton goHome={goHome} />
     </div>
-    
   );
 }

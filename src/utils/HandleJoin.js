@@ -60,6 +60,8 @@ export default async function HandleJoin(code) {
     await setDoc(playerRef, {
       name: randomName,
       joinedAt: serverTimestamp(),
+      shieldActive: false,
+      hitsReceived: 0
     });
   } catch (err) {
     console.error("Error creating player:", err);

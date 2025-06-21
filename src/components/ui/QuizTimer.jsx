@@ -3,7 +3,7 @@ export default function QuizTimer({ timeLeft }) {
   const secs = timeLeft % 60;
   return (
     <p>
-      Time Remaining: <strong>{`${mins}:${secs.toString().padStart(2, "0")}`}</strong>
+      <strong>{`${mins}:${secs.toString().padStart(2, "0")}`}</strong>
     </p>
   );
 }
