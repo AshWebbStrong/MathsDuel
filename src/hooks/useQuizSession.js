@@ -9,6 +9,8 @@ export function useQuizSession({sessionId, playerId}) {
   const [quizMode, setQuizMode] = useState(null);
   const [session, setSession] = useState(null); // store session data
 
+  const [playerName, setPlayerName] = useState(null);
+
   const [quizFinished, setQuizFinished] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
 
@@ -26,6 +28,23 @@ export function useQuizSession({sessionId, playerId}) {
     console.log("🧹 useQuizSession unmounted");
   };
 }, []);
+
+
+  // Listen to player data changes, including player name
+  useEffect(() => {
+    if (!sessionId || !playerId) return;
+
+    const playerRef = doc(db, "sessions", sessionId, "players", playerId);
+    const unsubscribe = onSnapshot(playerRef, (snap) => {
+      const data = snap.data();
+      console.log("Player snapshot data:", data);
+      if (data?.name) {
+        setPlayerName(data.name);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [sessionId, playerId]);
 
   // Listen for session snapshot updates
   useEffect(() => {
@@ -86,6 +105,7 @@ export function useQuizSession({sessionId, playerId}) {
   return {
 
   ...modeState,
+  playerName,
   quizFinished,
   quizStarted,
 };

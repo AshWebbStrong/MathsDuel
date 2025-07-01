@@ -11,8 +11,8 @@ export default function QuestionCard({
   if (!question) return <p>Loading question...</p>;
   
   return (
-    <div className="w-full bg-white/40 text-gray-900 p-4 rounded-none shadow-md backdrop-blur-md">
-      <h3 className="text-2xl font-bold mb-4">{question.question}</h3>
+    <div className="max-w-lg mx-4 bg-white/40 text-gray-900 p-2 rounded-none shadow-md backdrop-blur-md">
+      <h3 className="text-2xl font-bold mb-4 mx-2">{question.question}</h3>
 
       <input
         value={answer}
@@ -35,7 +35,7 @@ export default function QuestionCard({
           disabled ? "opacity-50 cursor-not-allowed" : ""
         }`}
       >
-        Submit
+        Protego!
       </button>
     </div>
   );

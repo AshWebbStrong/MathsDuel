@@ -27,6 +27,34 @@ body {
   
 }
 
+@keyframes flyDown {
+  0% {
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    height: 900px;
+    opacity: 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 12px 6px rgba(255, 255, 153, 1),   /* soft yellow */
+      0 0 40px 20px rgba(255, 255, 255, 0.8),/* white outer */
+      0 0 80px 40px rgba(200, 200, 255, 0.5);/* faint silver-blue */
+    transform: scaleX(1);
+  }
+  50% {
+    box-shadow:
+      0 0 24px 12px rgba(255, 255, 255, 1),   /* bright white */
+      0 0 60px 30px rgba(255, 255, 200, 0.9), /* pale yellow */
+      0 0 100px 50px rgba(230, 230, 255, 0.7);/* shimmering silver */
+    transform: scaleX(2);
+  }
+}
+
 
 
 /* Light mode overrides via media query */
@@ -34,4 +62,5 @@ body {
   a:hover {
     color: #747bff;
   }
+
 }

@@ -66,7 +66,7 @@ export default function HostSessionActive({ sessionId, goHome, onFinishQuiz }) {
     const sessionRef = doc(db, "sessions", sessionId);
 
     const totalRounds = session?.totalRounds ?? 3;
-    const roundDuration = session?.roundDuration ?? 45;
+    const roundDuration = session?.roundDuration ?? 300;
     const summaryDuration = session?.summaryDuration ?? 5;
     const prepareDuration = 2;
 
@@ -91,6 +91,7 @@ export default function HostSessionActive({ sessionId, goHome, onFinishQuiz }) {
 
       // Assign pairs to session
       await updateDoc(sessionRef, { pairs });
+      console.log("Generated pairs:", pairs);
 
       // Reload questions for each player and clear their inputs
       await reloadPlayerQuestionsAndClearInputs(pairs);

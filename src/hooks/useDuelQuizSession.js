@@ -25,16 +25,19 @@ export function useDuelQuizSession(session, playerId) {
   // Player's own state
   const [shieldActive, setShieldActive] = useState(false);
   const [hitsReceived, setHitsReceived] = useState(0);
-  const [opponentId, setOpponentId] = useState(null);
+
 
   // Opponent state
   const [opponentState, setOpponentState] = useState(null);
+  const [opponentId, setOpponentId] = useState(null);
 
     // New duel round states
   const [roundState, setRoundState] = useState(null);
   const [currentRound, setCurrentRound] = useState(0);
   const [roundDuration, setRoundDuration] = useState(0);
   const [pairs, setPairs] = useState([]);
+  const [shieldDuration, setShieldDuration] = useState(0);
+  const [spellCastTime, setSpellCastTime] = useState(0);
 
   // Timer
   const [localRoundTimeLeft, setLocalRoundTimeLeft] = useState(null);
@@ -95,6 +98,9 @@ export function useDuelQuizSession(session, playerId) {
     setCurrentRound(session.currentRound || 0);
     setRoundDuration(session.roundDuration || 0);
     setPairs(session.pairs || []);
+
+    setShieldDuration(session.shieldDuration ?? 0);
+    setSpellCastTime(session.spellCastTime ?? 0);
   }, [session]);
 
     // Derive opponentId from pairs and playeraId
@@ -132,19 +138,25 @@ export function useDuelQuizSession(session, playerId) {
     const question = shieldQuestions[shieldIndex];
     if (!question || !shieldUserAnswer.trim()) return;
 
-      const isCorrect = question.acceptableAnswers.some(ans =>
-        checkAnswer(shieldUserAnswer, ans.value, ans.mode)
-      );
+    const isCorrect = question.acceptableAnswers.some(ans =>
+      checkAnswer(shieldUserAnswer, ans.value, ans.mode)
+    );
 
     if (isCorrect) {
-      // Activate shield on own player doc
       const playerDocRef = doc(db, "sessions", session.id, "players", playerId);
       await updateDoc(playerDocRef, { shieldActive: true });
-      setShieldCorrectCount((prev) => (prev + 1));
+      setShieldCorrectCount(prev => prev + 1);
+
+      // Disable shield after shieldDuration seconds
+      setTimeout(async () => {
+        await updateDoc(playerDocRef, { shieldActive: false });
+      }, shieldDuration * 1000);
     }
 
-    setShieldAnsweredCount((prev) => (prev + 1));
-    setShieldIndex((prev) => (prev + 1) % shieldQuestions.length);
+    setShieldAnsweredCount(prev => prev + 1);
+    setTimeout(() => {
+      setShieldIndex(prev => (prev + 1) % shieldQuestions.length);
+    }, shieldDuration * 1000);
     setShieldUserAnswer("");
   };
 
@@ -157,34 +169,41 @@ export function useDuelQuizSession(session, playerId) {
     const question = spellQuestions[spellIndex];
     if (!question || !spellUserAnswer.trim() || !opponentId) return;
 
-      const isCorrect = question.acceptableAnswers.some(ans =>
-        checkAnswer(spellUserAnswer, ans.value, ans.mode)
-      );
+    const isCorrect = question.acceptableAnswers.some(ans =>
+      checkAnswer(spellUserAnswer, ans.value, ans.mode)
+    );
 
     if (isCorrect) {
-      setSpellCorrectCount((prev) => (prev + 1));
-      const opponentDocRef = doc(db, "sessions", session.id, "players", opponentId);
+      setSpellCorrectCount(prev => prev + 1);
+      const playerDocRef = doc(db, "sessions", session.id, "players", playerId);
+      await updateDoc(playerDocRef, { spellCorrectCount: spellCorrectCount + 1 });
 
-      // Fetch opponent's latest state (could also rely on opponentState but might be stale)
-      const opponentSnap = await getDoc(opponentDocRef);
-      if (!opponentSnap.exists()) return;
+      // Delay actual spell effect by spellCastTime seconds
+      setTimeout(async () => {
+        const opponentDocRef = doc(db, "sessions", session.id, "players", opponentId);
 
-      const opponentData = opponentSnap.data();
+        // Fetch latest opponent state
+        const opponentSnap = await getDoc(opponentDocRef);
+        if (!opponentSnap.exists()) return;
 
-      if (opponentData.shieldActive) {
-        // Break opponent's shield
-        await updateDoc(opponentDocRef, { shieldActive: false });
-      } else {
-        // Hit opponent if no shield
-        const newHits = (opponentData.hitsReceived ?? 0) + 1;
-        await updateDoc(opponentDocRef, { hitsReceived: newHits });
-      }
+        const opponentData = opponentSnap.data();
+
+        if (opponentData.shieldActive) {
+          // Break opponent's shield
+          await updateDoc(opponentDocRef, { shieldActive: false });
+        } else {
+          // Hit opponent if no shield
+          const newHits = (opponentData.hitsReceived ?? 0) + 1;
+          await updateDoc(opponentDocRef, { hitsReceived: newHits });
+        }
+      }, spellCastTime * 1000);
     }
 
-    setSpellAnsweredCount((prev) => (prev + 1));
-    setSpellIndex((prev) => (prev + 1) % spellQuestions.length);
+    setSpellAnsweredCount(prev => prev + 1);
+    setSpellIndex(prev => (prev + 1) % spellQuestions.length);
     setSpellUserAnswer("");
   };
+
 
   // Normalises the answer to math form
   function normalizeInput(str) {

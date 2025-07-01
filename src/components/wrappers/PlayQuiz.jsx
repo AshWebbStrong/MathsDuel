@@ -9,6 +9,8 @@ import RoundSummaryTable from "@/components/screens/RoundSummaryTable.jsx";
 export default function PlayQuiz({ sessionId, playerId, goHome }) {
   
   const {
+    playerName,
+
     trackShield,
     trackSpell,
     opponentState,
@@ -27,9 +29,8 @@ export default function PlayQuiz({ sessionId, playerId, goHome }) {
 
   } = useQuizSession({sessionId, playerId});
 
-
 return (
-    <div style={{ padding: "0rem", color: "white" }}>
+    <div>
       {!quizStarted ? (
         <PlayerLobby sessionId={sessionId} playerId={playerId} />
       ) : !quizFinished ? (
@@ -41,10 +42,12 @@ return (
 
           {roundState === "active" && trackShield && trackSpell ? (
             <PlayerQuizBattleScreen
+              playerName={playerName}
               trackShield={trackShield}
               trackSpell={trackSpell}
               timeLeft={localRoundTimeLeft}
               hitsReceived={hitsReceived}
+              opponentHitsReceived={opponentState?.hitsReceived ?? 0}
               opponentState={opponentState}
             />
           ) : roundState === "summary" ? (

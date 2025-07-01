@@ -18,6 +18,10 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
   const [quizMode, setQuizMode] = useState(QUIZ_MODES.DUEL);
   const [quizDuration, setQuizDuration] = useState(5);
   const [startShielded, setStartShielded] = useState(true);
+  const [totalRounds, setTotalRounds] = useState(3);
+  const [roundDuration, setRoundDuration] = useState(45);
+  const [shieldDuration, setShieldDuration] = useState(2);
+  const [spellCastTime, setSpellCastTime] = useState(0.5);
 
 
 
@@ -31,28 +35,30 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
       const sessionCode = await generateUniqueSessionCode();
       const sessionRef = doc(db, "sessions", sessionCode);
 
-      await setDoc(sessionRef, {
-        id: sessionRef.id,
-        questionSetIdShield: questionSetDataA?.id,
-        questionSetNameShield: questionSetDataA?.title,
-        questionSetIdSpell: questionSetDataB?.id,
-        questionSetNameSpell: questionSetDataB?.title,
-        quizMode: quizMode,
-        startTime: serverTimestamp(),
-        finishTime: null,
-        quizDuration: quizDuration * 60,
-        startShielded: startShielded,
-        hostActive: true,
-        sessionStarted: false,
-        sessionFinished: false,
-        currentRound: 0,
-        totalRounds: 3,                // or get from your settings
-        roundDuration: 45,             // seconds per round
-        summaryDuration: 5,            // summary screen duration
-        roundState: "waiting",         // initial state before rounds start
-        roundStartTime: null,
-        pairs: [],
-      });
+    await setDoc(sessionRef, {
+      id: sessionRef.id,
+      questionSetIdShield: questionSetDataA?.id,
+      questionSetNameShield: questionSetDataA?.title,
+      questionSetIdSpell: questionSetDataB?.id,
+      questionSetNameSpell: questionSetDataB?.title,
+      quizMode: quizMode,
+      startTime: serverTimestamp(),
+      finishTime: null,
+      quizDuration: quizDuration * 60,
+      startShielded: startShielded,
+      hostActive: true,
+      sessionStarted: false,
+      sessionFinished: false,
+      currentRound: 0,
+      totalRounds: totalRounds,
+      roundDuration: roundDuration,
+      summaryDuration: 5,
+      roundState: "waiting",
+      roundStartTime: null,
+      shieldDuration: shieldDuration,
+      spellCastTime: spellCastTime,
+      pairs: [],
+    });
 
       onSessionStarted(sessionRef.id);
     } catch (err) {
@@ -106,6 +112,7 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
               type="range"
               min="0.5"
               max="5"
+              step="0.5"
               value={quizDuration}
               onChange={(e) => setQuizDuration(Number(e.target.value))}
               className="w-full accent-indigo-600"
@@ -125,7 +132,71 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
             </label>
           </div>
 
-          {/* Future settings */}
+          {/* Total Rounds */}
+          <div className="mb-6">
+            <label className="block text-lg font-medium text-gray-700 mb-2">
+              Total Rounds: {totalRounds}
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              step="1"
+              value={totalRounds}
+              onChange={(e) => setTotalRounds(Number(e.target.value))}
+              className="w-full accent-indigo-600"
+            />
+          </div>
+
+          {/* Round Duration */}
+          <div className="mb-6">
+            <label className="block text-lg font-medium text-gray-700 mb-2">
+              Round Duration: {roundDuration} seconds
+            </label>
+            <input
+              type="range"
+              min="30"
+              max="90"
+              step="5"
+              value={roundDuration}
+              onChange={(e) => setRoundDuration(Number(e.target.value))}
+              className="w-full accent-indigo-600"
+            />
+          </div>
+
+          {/* Shield Duration */}
+          <div className="mb-6">
+            <label className="block text-lg font-medium text-gray-700 mb-2">
+              Shield Duration: {shieldDuration} seconds
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              step="1"
+              value={shieldDuration}
+              onChange={(e) => setShieldDuration(Number(e.target.value))}
+              className="w-full accent-indigo-600"
+            />
+          </div>
+
+          {/* Spell Cast Time */}
+          <div className="mb-6">
+            <label className="block text-lg font-medium text-gray-700 mb-2">
+              Spell Cast Time: {spellCastTime.toFixed(2)} seconds
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="2"
+              step="0.25"
+              value={spellCastTime}
+              onChange={(e) => setSpellCastTime(Number(e.target.value))}
+              className="w-full accent-indigo-600"
+            />
+          </div>
+
+          {/* Future settings placeholder */}
           <div className="text-gray-500 text-sm italic">
             More settings coming soon...
           </div>
@@ -158,4 +229,5 @@ export default function HostSessionSetup({ onSessionStarted, goHome }) {
       </div>
     </div>
   );
+
 }

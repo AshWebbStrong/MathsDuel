@@ -53,7 +53,7 @@ export default async function HandleJoin(code) {
     sessionStorage.setItem("playerId", playerId);
   }
 
-  const randomName = "Player_" + Math.random().toString(36).substr(2, 5);
+  const randomName = "Witch" + Math.random().toString(9).substr(2, 1);
   const playerRef = doc(db, "sessions", upperCode, "players", playerId);
 
   try {
@@ -61,7 +61,8 @@ export default async function HandleJoin(code) {
       name: randomName,
       joinedAt: serverTimestamp(),
       shieldActive: false,
-      hitsReceived: 0
+      hitsReceived: 0,
+      spellCorrectCount: 0
     });
   } catch (err) {
     console.error("Error creating player:", err);

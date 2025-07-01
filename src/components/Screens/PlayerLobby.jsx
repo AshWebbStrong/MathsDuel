@@ -10,27 +10,42 @@ export default function PlayerLobby({ sessionId, playerId, goHome }) {
   const [originalName, setOriginalName] = useState("");
 
   const availableIcons = [
-    "🐱", "🐶", "🦊", "🐼", "🐸", "🐵", "🐰", "🐻", "🐯", "🦄",
+   "/images/yellowWitch1.png",
+   "/images/greenWitch1.png",
+   "/images/purpleWitch1.png",
+   "/images/redWitch1.png",
   ];
 
   useEffect(() => {
     if (!sessionId) return;
 
     const playersRef = collection(db, "sessions", sessionId, "players");
-    const unsubscribe = onSnapshot(playersRef, (snapshot) => {
+    const unsubscribe = onSnapshot(playersRef, async (snapshot) => {
       const playersData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setPlayers(playersData);
 
-      // Find current player data
       const me = playersData.find((p) => p.id === playerId);
       if (me) {
         if (me.icon !== selectedIcon) setSelectedIcon(me.icon || null);
         if (me.name !== originalName) {
           setOriginalName(me.name || "");
           setCurrentName(""); // reset input on external name changes
+        }
+
+        // Assign random icon if none set
+        if (!me.icon) {
+          // pick random icon
+          const randomIcon = availableIcons[Math.floor(Math.random() * availableIcons.length)];
+          try {
+            const playerRef = doc(db, "sessions", sessionId, "players", playerId);
+            await updateDoc(playerRef, { icon: randomIcon });
+            setSelectedIcon(randomIcon);
+          } catch (error) {
+            console.error("Failed to set random icon:", error);
+          }
         }
       }
     });
@@ -51,7 +66,13 @@ export default function PlayerLobby({ sessionId, playerId, goHome }) {
 
   // Update name in Firestore on Enter key
   const handleNameKeyDown = async (e) => {
-    if (e.key === "Enter" && currentName.trim() !== "" && currentName !== originalName) {
+    if (
+      e.key === "Enter" &&
+      currentName.trim() !== "" &&
+      currentName === currentName.replace(/\s/g, "") && // no spaces
+      currentName.length <= 7 &&
+      currentName !== originalName
+    ) {
       if (!sessionId || !playerId) return;
       const playerRef = doc(db, "sessions", sessionId, "players", playerId);
       try {
@@ -73,7 +94,10 @@ export default function PlayerLobby({ sessionId, playerId, goHome }) {
           <input
             type="text"
             value={currentName}
-            onChange={(e) => setCurrentName(e.target.value)}
+            onChange={(e) => { 
+              const value = e.target.value.replace(/\s/g, "").slice(0, 7);
+              setCurrentName(value);
+            }}
             onKeyDown={handleNameKeyDown}
             placeholder={originalName || "Your name"}
             className="w-full text-center text-2xl md:text-3xl bg-gray-800 rounded-lg py-3 px-6 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
@@ -96,7 +120,17 @@ export default function PlayerLobby({ sessionId, playerId, goHome }) {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-8 px-4">
             {players.map(({ id, name, icon }) => (
               <div key={id} className="flex flex-col items-center">
-                <div className="text-6xl">{icon || "❓"}</div>
+                <div className="w-32 h-32 relative">
+                  {icon ? (
+                    <img
+                      src={icon}
+                      alt="Player avatar"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  ) : (
+                    <div className="text-6xl">❓</div>
+                  )}
+                </div>
                 <div className="mt-4 text-lg font-semibold truncate max-w-[120px] text-center">
                   {name || "Unknown"}
                 </div>
@@ -114,12 +148,16 @@ export default function PlayerLobby({ sessionId, playerId, goHome }) {
             <button
               key={icon}
               onClick={() => handleIconSelect(icon)}
-              className={`text-6xl rounded-full cursor-pointer 
-                ${selectedIcon === icon ? "bg-blue-600" : "bg-gray-800"} 
-                p-3 flex-shrink-0`}
-              aria-label={`Select icon ${icon}`}
+              className={`rounded-lg cursor-pointer border-4 
+                ${selectedIcon === icon ? "border-blue-600" : "border-transparent"} 
+                p-1 flex-shrink-0`}
+              aria-label="Select avatar"
             >
-              {icon}
+              <img
+                src={icon}
+                alt="Avatar option"
+                className="w-20 h-20 object-contain rounded-md"
+              />
             </button>
           ))}
         </div>
