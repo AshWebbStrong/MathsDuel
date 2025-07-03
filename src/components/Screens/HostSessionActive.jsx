@@ -68,7 +68,7 @@ export default function HostSessionActive({ sessionId, goHome, onFinishQuiz }) {
     const totalRounds = session?.totalRounds ?? 3;
     const roundDuration = session?.roundDuration ?? 300;
     const summaryDuration = session?.summaryDuration ?? 5;
-    const prepareDuration = 2;
+    const prepareDuration = 20;
 
     // === Prepare stage (only once at the start) ===
     await updateDoc(sessionRef, {

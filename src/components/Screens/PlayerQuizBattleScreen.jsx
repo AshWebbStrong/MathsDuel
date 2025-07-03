@@ -247,6 +247,9 @@ const PlayerQuizBattleScreen = ({
             onFocus={handleShieldFocus}
             onBlur={handleInputBlur}
             inputRef={shieldInputRef}
+            shieldActive={trackShield.shieldActive}
+            cooldown = {trackShield.cooldown}
+            spellName = {"Protect!"}
 
           />
           <p className="mt-auto mr-auto bg-gray-800 bg-opacity-70 text-3xl text-gray-100 px-3 py-2 rounded-lg">
@@ -265,6 +268,8 @@ const PlayerQuizBattleScreen = ({
             onFocus={handleSpellFocus}
             onBlur={handleInputBlur}
             inputRef={spellInputRef}
+            cooldown = {trackSpell.cooldown}
+            spellName = {"Attack!"}
           />
             <p className="mt-auto ml-auto bg-gray-800 bg-opacity-70 text-3xl text-gray-100 px-3 py-2 rounded-lg">
               {trackSpell.correctCount ?? 0} correct of {trackSpell.answeredCount ?? 0}

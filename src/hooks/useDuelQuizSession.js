@@ -19,6 +19,9 @@ export function useDuelQuizSession(session, playerId) {
   const [shieldUserAnswer, setShieldUserAnswer] = useState("");
   const [spellUserAnswer, setSpellUserAnswer] = useState("");
 
+  const [shieldCooldown, setShieldCooldown] = useState(false);
+  const [spellCooldown, setSpellCooldown] = useState(false);
+
   const [shieldKeyboardLayout, setShieldKeyboardLayout] = useState([]);
   const [spellKeyboardLayout, setSpellKeyboardLayout] = useState([]);
 
@@ -151,6 +154,12 @@ export function useDuelQuizSession(session, playerId) {
       setTimeout(async () => {
         await updateDoc(playerDocRef, { shieldActive: false });
       }, shieldDuration * 1000);
+      // If answer incorrect - Activate a cooldown for shieldQuestions
+    } else {
+      setShieldCooldown(true)
+      setTimeout(() => {
+        setShieldCooldown(false)
+      }, 5000);
     }
 
     setShieldAnsweredCount(prev => prev + 1);
@@ -162,12 +171,9 @@ export function useDuelQuizSession(session, playerId) {
 
   // Submit spell answer
   const submitSpellAnswer = async () => {
-    if (!opponentId) {
-      console.log("No opponent to shoot at");
-      return;
-    }
-    const question = spellQuestions[spellIndex];
-    if (!question || !spellUserAnswer.trim() || !opponentId) return;
+  // Allow submit even if no opponentId
+  const question = spellQuestions[spellIndex];
+    if (!question || !spellUserAnswer.trim()) return;
 
     const isCorrect = question.acceptableAnswers.some(ans =>
       checkAnswer(spellUserAnswer, ans.value, ans.mode)
@@ -178,31 +184,36 @@ export function useDuelQuizSession(session, playerId) {
       const playerDocRef = doc(db, "sessions", session.id, "players", playerId);
       await updateDoc(playerDocRef, { spellCorrectCount: spellCorrectCount + 1 });
 
-      // Delay actual spell effect by spellCastTime seconds
-      setTimeout(async () => {
-        const opponentDocRef = doc(db, "sessions", session.id, "players", opponentId);
+      if (opponentId) {
+        // Delay actual spell effect by spellCastTime seconds
+        setTimeout(async () => {
+          const opponentDocRef = doc(db, "sessions", session.id, "players", opponentId);
 
-        // Fetch latest opponent state
-        const opponentSnap = await getDoc(opponentDocRef);
-        if (!opponentSnap.exists()) return;
+          // Fetch latest opponent state
+          const opponentSnap = await getDoc(opponentDocRef);
+          if (!opponentSnap.exists()) return;
 
-        const opponentData = opponentSnap.data();
+          const opponentData = opponentSnap.data();
 
-        if (opponentData.shieldActive) {
-          // Break opponent's shield
-          await updateDoc(opponentDocRef, { shieldActive: false });
-        } else {
-          // Hit opponent if no shield
-          const newHits = (opponentData.hitsReceived ?? 0) + 1;
-          await updateDoc(opponentDocRef, { hitsReceived: newHits });
-        }
-      }, spellCastTime * 1000);
+          if (!opponentData.shieldActive) {
+            // Hit opponent if no shield
+            const newHits = (opponentData.hitsReceived ?? 0) + 1;
+            await updateDoc(opponentDocRef, { hitsReceived: newHits });
+          }
+        }, spellCastTime * 1000);
+      }
+    } else {
+      setSpellCooldown(true);
+      setTimeout(() => {
+        setSpellCooldown(false);
+      }, 5000);
     }
 
     setSpellAnsweredCount(prev => prev + 1);
     setSpellIndex(prev => (prev + 1) % spellQuestions.length);
     setSpellUserAnswer("");
   };
+
 
 
   // Normalises the answer to math form
@@ -270,6 +281,7 @@ export function useDuelQuizSession(session, playerId) {
       setPlayerAnswer: setShieldUserAnswer,
       submitAnswer: submitShieldAnswer,
       shieldActive,
+      cooldown: shieldCooldown,
       keyboardLayout: shieldKeyboardLayout,
       answeredCount: shieldAnsweredCount,
       correctCount: shieldCorrectCount,
@@ -279,6 +291,7 @@ export function useDuelQuizSession(session, playerId) {
       playerAnswer: spellUserAnswer,
       setPlayerAnswer: setSpellUserAnswer,
       submitAnswer: submitSpellAnswer,
+      cooldown: spellCooldown,
       keyboardLayout: spellKeyboardLayout,
       answeredCount: spellAnsweredCount,
       correctCount: spellCorrectCount,

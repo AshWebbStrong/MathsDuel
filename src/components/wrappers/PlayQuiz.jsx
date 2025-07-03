@@ -5,6 +5,7 @@ import PlayerLobby from "@/components/screens/PlayerLobby.jsx";
 import PlayerQuizBattleScreen from "@/components/screens/PlayerQuizBattleScreen.jsx";
 import PlayerQuizSummary from "@/components/screens/PlayerQuizSummary.jsx";
 import RoundSummaryTable from "@/components/screens/RoundSummaryTable.jsx";
+import PlayQuizInstructions from "@/components/screens/PlayQuizInstructions.jsx";
 
 export default function PlayQuiz({ sessionId, playerId, goHome }) {
   
@@ -36,11 +37,10 @@ return (
       ) : !quizFinished ? (
         <>
 
-          {roundState === "prepare" && (
-            <div>Get ready! Round starting soon...</div>
-          )}
+          {roundState === "prepare" ? (
+            <PlayQuizInstructions />
 
-          {roundState === "active" && trackShield && trackSpell ? (
+          ) : roundState === "active" && trackShield && trackSpell ? (
             <PlayerQuizBattleScreen
               playerName={playerName}
               trackShield={trackShield}
